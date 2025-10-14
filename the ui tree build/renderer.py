@@ -25,9 +25,9 @@ class WidgetDataType(Enum):
 class AssetDataType(Enum):
     TEXT = 0
     ASSET = 1
-    BINARY_ASSET = ASSET.value + 1
-    TEXT_ASSET = ASSET.value + 2
-    IMAGE_ASSET = ASSET.value + 3
+    BINARY_ASSET = 2
+    TEXT_ASSET = 3
+    IMAGE_ASSET = 4
 
 class GSGRenderSystem(QOpenGLWidget):
     def __init__(self):
@@ -44,6 +44,7 @@ class GSGRenderSystem(QOpenGLWidget):
         self.asset_path = set()
         self.buffers = {}  # name -> buffer id
         self.data = {}  # name -> numpy array
+        self.widget_max = 10000
     
     def initializeGL(self):
         glEnable(GL_BLEND)
@@ -55,8 +56,8 @@ class GSGRenderSystem(QOpenGLWidget):
         self.init_geometry()  # VAO/VBO for quads, shapes
         self.init_assets(assets_to_load={1:(AssetDataType.IMAGE_ASSET, ("assets/map", 0))})  # load map, UI assets
         self.init_FBOs(self.width,self.heigt)  # create offscreen framebuffers for passes
-        self.widget_max = 1000
-        self.init_SSBOs(ssbo_specs={1: (WidgetDataType.POSITION,(10000,np.int64))})  # upload per-widget arrays: position, color, flags, etc.
+        self.init_SSBOs(ssbo_specs={1: (WidgetDataType.POSITION,(self.widget_max * 4,np.int64)), 2: (WidgetDataType.SHADER_PASS,(self.widget_max,np.uint8)),3: (WidgetDataType.COLOUR,(self.widget_max * 4,np.uint8)),
+                                    4: (WidgetDataType.SHAPE,(self.widget_max, np.uint8)), 5: (WidgetDataType.ASSETS_ID,(self.widget_max, np.int32)), 6: (WidgetDataType.TEXT_ID,(self.widget_max, np.int32))})  # upload per-widget arrays: position, color, flags, etc.
     
     def paintGL(self):
         # 1️⃣ Map pass
