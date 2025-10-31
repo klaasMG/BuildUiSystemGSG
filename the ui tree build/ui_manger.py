@@ -2,6 +2,8 @@ from renderer import GSGRenderSystem
 import sys
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTimer
+import numpy as np
+from widget_data import WidgetDataType
 
 class GSGWidget:
     FLAG_VISIBLE = 1 << 0
@@ -15,6 +17,7 @@ class GSGWidget:
         self.flags = flags
         self.last_id = -1
         self.parent = parent
+        self.widget_max = 10000
     
     def set_flag(self , flag):
         self.flags |= flag
@@ -40,12 +43,20 @@ class GSGWidget:
     
 class GSGUiManager:
     def __init__(self):
+        self.widget_data = {}
+        self.widget_max = 10000
+        self.init_widget_data(widget_data_types={1: (WidgetDataType.POSITION , (self.widget_max * 4 , np.int64)) ,
+                                                 2: (WidgetDataType.SHADER_PASS , (self.widget_max , np.int16)) ,
+                                                 3: (WidgetDataType.COLOUR , (self.widget_max * 4 , np.int16)) ,
+                                                 4: (WidgetDataType.SHAPE , (self.widget_max , np.int16)) ,
+                                                 5: (WidgetDataType.ASSETS_ID , (self.widget_max , np.int32)) ,
+                                                 6: (WidgetDataType.TEXT_ID , (self.widget_max , np.int32)) ,
+                                                 7: (WidgetDataType.PARENT , (self.widget_max , np.int32))})
         self.widgets_by_id = {}
         self.free_ids = []
         self.next_id = 1
         self.root = GSGWidget(0)
         self.append_widget(self.root)
-        self.data = []
         
     def run_ui_manager(self):
         self.running = True
@@ -61,6 +72,7 @@ class GSGUiManager:
         
     def update_ui_manager(self):
         self.GSG_renderer_system.update()
+        
     def append_widget(self,widget):
         if self.free_ids:
             widget.id = self.free_ids.pop()
@@ -68,16 +80,51 @@ class GSGUiManager:
             widget.id = self.next_id
             self.next_id += 1
         self.widgets_by_id[widget.id] = widget
+        
+        self.set_widget_defaults(widget)
+        
+    def set_widget_defaults(self,widget,data = None):
+        if not data or len(data) != 12:
+            data = [-1] * 12
+        i = widget.id
+        pos = data[0:4] if data[0:4] != [-1] * 4 else [-1, -1, -1, -1]
+        col = data[4:8] if data[4:8] != [-1] * 4 else [-1 , -1 , -1 , -1]
+        self.widget_data[WidgetDataType.POSITION][i * 4:i * 4 + 4] = pos
+        self.widget_data[WidgetDataType.COLOUR][i * 4:i * 4 + 4] = col
+        self.widget_data[WidgetDataType.SHADER_PASS][i] = data[8]
+        self.widget_data[WidgetDataType.SHAPE][i] = data[9]
+        self.widget_data[WidgetDataType.PARENT][i] = widget.parent.id if widget.parent else -1
+        self.widget_data[WidgetDataType.TEXT_ID][i] = data[10]
+        self.widget_data[WidgetDataType.ASSETS_ID][i] = data[11]
     
-    def remove_widget_subtree(self, root_widget):
+    def clear_widget_data(self , wid):
+        default = -1
+        self.widget_data[WidgetDataType.POSITION][wid * 4:wid * 4 + 4] = [default , default , default , default]
+        self.widget_data[WidgetDataType.COLOUR][wid * 4:wid * 4 + 4] = [default , default , default , default]
+        self.widget_data[WidgetDataType.SHADER_PASS][wid] = default
+        self.widget_data[WidgetDataType.SHAPE][wid] = default
+        self.widget_data[WidgetDataType.ASSETS_ID][wid] = default
+        self.widget_data[WidgetDataType.TEXT_ID][wid] = default
+        self.widget_data[WidgetDataType.PARENT][wid] = default
+        
+    def init_widget_data(self, widget_data_types: dict):
+        for key , (size, dtype) in widget_data_types.values():
+            arr = np.full(size , -1 , dtype=dtype)
+            self.widget_data[key] = arr
+    
+    def remove_widget_subtree(self , root_widget):
         stack = [root_widget]
         while stack:
             w = stack.pop()
-            # add children to stack
             stack.extend(w.children.values())
+            
             # remove from manager
             self.widgets_by_id.pop(w.id , None)
             self.free_ids.append(w.id)
+            
+            # 🔥 clear its data
+            self.clear_widget_data(w.id)
+            
             # clear children
             w.children.clear()
             

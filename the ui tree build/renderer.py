@@ -37,7 +37,7 @@ class GSGRenderSystem(QOpenGLWidget):
         self.buffers = {}  # name -> buffer id
         self.data = {}  # name -> numpy array
         self.assets_to_update = {}
-        self.widget_max = 10000
+        self.widget_max = self.GSG_gui_system.widget_max
     
     def initializeGL(self):
         glEnable(GL_BLEND)
@@ -49,9 +49,9 @@ class GSGRenderSystem(QOpenGLWidget):
         self.init_geometry()  # VAO/VBO for quads, shapes
         self.init_assets(assets_to_load={1:(AssetDataType.IMAGE_ASSET, ("assets/map.png", 0))})  # load map, UI assets
         self.init_FBOs(self.width(),self.height())  # create offscreen framebuffers for passes
-        self.init_SSBOs(ssbo_specs={1: (WidgetDataType.POSITION,(self.widget_max * 4,np.int64)), 2: (WidgetDataType.SHADER_PASS,(self.widget_max,np.uint8)),3: (WidgetDataType.COLOUR,(self.widget_max * 4,np.uint8)),
-                                    4: (WidgetDataType.SHAPE,(self.widget_max, np.uint8)), 5: (WidgetDataType.ASSETS_ID,(self.widget_max, np.int32)), 6: (WidgetDataType.TEXT_ID,(self.widget_max, np.int32)),
-                                    7: (WidgetDataType.PARENT,(self.widget_max, np.int32))})  # upload per-widget arrays: position, color, flags, etc.
+        self.init_SSBOs(ssbo_specs={1: WidgetDataType.POSITION, 2: WidgetDataType.SHADER_PASS,3: WidgetDataType.COLOUR,
+                                    4: WidgetDataType.SHAPE, 5: WidgetDataType.ASSETS_ID, 6: WidgetDataType.TEXT_ID,
+                                    7: WidgetDataType.PARENT})  # upload per-widget arrays: position, color, flags, etc.
     
     def paintGL(self):
         self.update_ssbo()
@@ -83,7 +83,7 @@ class GSGRenderSystem(QOpenGLWidget):
         pass
     
     def update_ssbo(self):
-        for name , arr in self.data.items():
+        for name , arr in self.GSG_gui_system.widget_data.items():
             glBindBuffer(GL_SHADER_STORAGE_BUFFER , self.buffers[name])
             glBufferSubData(GL_SHADER_STORAGE_BUFFER , 0 , arr.nbytes , arr)
     
@@ -175,12 +175,9 @@ class GSGRenderSystem(QOpenGLWidget):
         dtype = numpy dtype
         """
         binding = 0
-        for name, (size, dtype) in ssbo_specs.values():
-            if not isinstance(name,int):
-                name = name.value
+        for name in ssbo_specs.values():
             # Create numpy array for CPU-side storage
-            arr = np.zeros(size, dtype=dtype)
-            self.GSG_gui_system.data[name] = arr
+            arr = self.GSG_gui_system.widget_data[name]
 
             # Generate GPU buffer
             buf = glGenBuffers(1)
