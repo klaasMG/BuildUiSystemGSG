@@ -55,6 +55,7 @@ class GSGUiManager:
         self.widgets_by_id = {}
         self.free_ids = []
         self.next_id = 1
+        self.GSG_renderer_system = None
         self.root = GSGWidget(0)
         self.append_widget(self.root)
         
@@ -71,7 +72,11 @@ class GSGUiManager:
         sys.exit(self.app.exec_())
         
     def update_ui_manager(self):
+        self.update_widgets()
         self.GSG_renderer_system.update()
+        
+    def update_widgets(self):
+        pass
         
     def append_widget(self,widget):
         if self.free_ids:
@@ -83,12 +88,34 @@ class GSGUiManager:
         
         self.set_widget_defaults(widget)
         
+    def update_widget(self, widget, data = None):
+        if not data or len(data) != 12 or data == [-1] * 12:
+            return
+        i = widget.id
+        pos = data[0:4]
+        col = data[4:8]
+        for p, j in enumerate(pos):
+            if j == -1:
+                pos[p] = self.widget_data[WidgetDataType.POSITION][i * 4 + p]
+        for p, j in enumerate(col):
+            if j == -1:
+                pos[p] = self.widget_data[WidgetDataType.COLOUR][i * 4 + p]
+        self.widget_data[WidgetDataType.POSITION][i * 4:i * 4 + 4] = pos
+        self.widget_data[WidgetDataType.COLOUR][i * 4:i * 4 + 4] = col
+        self.widget_data[WidgetDataType.SHADER_PASS][i] = data[8] if data[8] != -1 else self.widget_data[WidgetDataType.SHADER_PASS][i]
+        self.widget_data[WidgetDataType.SHAPE][i] = data[9] if data[9] != -1 else self.widget_data[WidgetDataType.SHAPE][i]
+        self.widget_data[WidgetDataType.PARENT][i] = widget.parent.id if widget.parent else self.widget_data[WidgetDataType.PARENT][i]
+        self.widget_data[WidgetDataType.TEXT_ID][i] = data[10] if data[10] != -1 else self.widget_data[WidgetDataType.TEXT_ID][i]
+        self.widget_data[WidgetDataType.ASSETS_ID][i] = data[11] if data[11] != -1 else self.widget_data[WidgetDataType.ASSETS_ID][i]
+        if self.GSG_renderer_system:
+            self.GSG_renderer_system.vertices[i * 5:i * 5 + 3] = pos[0:3]
+        
     def set_widget_defaults(self,widget,data = None):
         if not data or len(data) != 12:
             data = [-1] * 12
         i = widget.id
-        pos = data[0:4] if data[0:4] != [-1] * 4 else [-1, -1, -1, -1]
-        col = data[4:8] if data[4:8] != [-1] * 4 else [-1 , -1 , -1 , -1]
+        pos = data[0:4]
+        col = data[4:8]
         self.widget_data[WidgetDataType.POSITION][i * 4:i * 4 + 4] = pos
         self.widget_data[WidgetDataType.COLOUR][i * 4:i * 4 + 4] = col
         self.widget_data[WidgetDataType.SHADER_PASS][i] = data[8]
@@ -96,6 +123,8 @@ class GSGUiManager:
         self.widget_data[WidgetDataType.PARENT][i] = widget.parent.id if widget.parent else -1
         self.widget_data[WidgetDataType.TEXT_ID][i] = data[10]
         self.widget_data[WidgetDataType.ASSETS_ID][i] = data[11]
+        if self.GSG_renderer_system:
+            self.GSG_renderer_system.vertices[i * 5:i * 5 + 3] = pos[0:3]
     
     def clear_widget_data(self , wid):
         default = -1

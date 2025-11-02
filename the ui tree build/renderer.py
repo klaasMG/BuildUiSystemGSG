@@ -38,6 +38,7 @@ class GSGRenderSystem(QOpenGLWidget):
         self.data = {}  # name -> numpy array
         self.assets_to_update = {}
         self.widget_max = self.GSG_gui_system.widget_max
+        self.vertices = np.full((self.widget_max * 5) , 0.0 , dtype=np.float32)
     
     def initializeGL(self):
         glEnable(GL_BLEND)
@@ -59,24 +60,45 @@ class GSGRenderSystem(QOpenGLWidget):
         self.update_geometry()
         
         # 1️⃣ Map pass
-        glBindFramebuffer(GL_FRAMEBUFFER , self.fbos[ShaderPass.PASS_MAP.value])
+        glBindFramebuffer(GL_FRAMEBUFFER , self.fbos[ShaderPass.PASS_MAP])
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glUseProgram(self.map_shader_program)
         self.render_widgets(pass_type=ShaderPass.PASS_MAP)
         
         # 2️⃣ Basic widgets
-        glBindFramebuffer(GL_FRAMEBUFFER , self.fbos[ShaderPass.PASS_BASIC.value])  # render to screen
+        glBindFramebuffer(GL_FRAMEBUFFER , self.fbos[ShaderPass.PASS_BASIC])  # render to screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glUseProgram(self.basic_widget_shader_program)
         self.render_widgets(pass_type=ShaderPass.PASS_BASIC)
         
         # 3️⃣ Complex widgets (offscreen first)
-        glBindFramebuffer(GL_FRAMEBUFFER , self.fbos[ShaderPass.PASS_COMPLEX.value])
+        glBindFramebuffer(GL_FRAMEBUFFER , self.fbos[ShaderPass.PASS_COMPLEX])
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glUseProgram(self.complex_widget_shader_program)
         self.render_widgets(pass_type=ShaderPass.PASS_COMPLEX)
         
         # 4️⃣ Text pass
-        glBindFramebuffer(GL_FRAMEBUFFER, self.fbos[ShaderPass.PASS_TEXT.value])
+        glBindFramebuffer(GL_FRAMEBUFFER, self.fbos[ShaderPass.PASS_TEXT])
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glUseProgram(self.text_shader_program)
         self.render_widgets(pass_type=ShaderPass.PASS_TEXT)
+        
+        glBindFramebuffer(GL_FRAMEBUFFER , 0)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glUseProgram(self.final_composite_program)
+        
+        # bind all previous FBO textures for sampling
+        for i , (pass_type , tex) in enumerate(self.textures.items()):
+            glActiveTexture(GL_TEXTURE0 + i)
+            glBindTexture(GL_TEXTURE_2D , tex)
+            loc = glGetUniformLocation(self.final_composite_program , f"fbo_tex_{pass_type.name.lower()}")
+            if loc != -1:
+                glUniform1i(loc , i)
+        
+        # draw full-screen quad (your VAO already works)
+        glBindVertexArray(self.vao)
+        glDrawArrays(GL_TRIANGLES , 0 , 6)
+        glBindVertexArray(0)
         
         
     def render_widgets(self , pass_type):
@@ -95,9 +117,9 @@ class GSGRenderSystem(QOpenGLWidget):
         self.basic_widget_shader_program = self.load_shader_program(f"{shader_dir}/basic_vert.glsl" , f"{shader_dir}/basic_frag.glsl")
         self.complex_widget_shader_program = self.load_shader_program(f"{shader_dir}/complex_vert.glsl" , f"{shader_dir}/complex_frag.glsl")
         self.text_shader_program = self.load_shader_program(f"{shader_dir}/text_vert.glsl" , f"{shader_dir}/text_frag.glsl")
+        self.final_composite_program = self.load_shader_program(f"{shader_dir}/final_vert.glsl" ,f"{shader_dir}/final_frag.glsl")
     
     def init_geometry(self):
-        self.vertices = np.full((self.widget_max * 5),0.0,dtype=np.float32)
         
         self.vao = glGenVertexArrays(1)
         glBindVertexArray(self.vao)
@@ -136,35 +158,31 @@ class GSGRenderSystem(QOpenGLWidget):
         self.init_assets(assets_to_load=assets_to_load)
     
     def init_FBOs(self , width , height):
-        self.fbos = []
-        self.textures = []
+        self.fbos = {}
+        self.textures = {}
         
-        for i in range(4):  # e.g. 4 passes
+        for pass_type in ShaderPass:
             fbo = glGenFramebuffers(1)
             glBindFramebuffer(GL_FRAMEBUFFER , fbo)
             
             tex = glGenTextures(1)
             glBindTexture(GL_TEXTURE_2D , tex)
-            glTexImage2D(GL_TEXTURE_2D , 0 , GL_RGBA , width , height , 0 ,
-                         GL_RGBA , GL_UNSIGNED_BYTE , None)
+            glTexImage2D(GL_TEXTURE_2D , 0 , GL_RGBA , width , height , 0 , GL_RGBA , GL_UNSIGNED_BYTE , None)
             glTexParameteri(GL_TEXTURE_2D , GL_TEXTURE_MIN_FILTER , GL_LINEAR)
             glTexParameteri(GL_TEXTURE_2D , GL_TEXTURE_MAG_FILTER , GL_LINEAR)
             
-            glFramebufferTexture2D(GL_FRAMEBUFFER , GL_COLOR_ATTACHMENT0 ,
-                                   GL_TEXTURE_2D , tex , 0)
+            glFramebufferTexture2D(GL_FRAMEBUFFER , GL_COLOR_ATTACHMENT0 , GL_TEXTURE_2D , tex , 0)
             
-            # optional depth buffer
             rbo = glGenRenderbuffers(1)
             glBindRenderbuffer(GL_RENDERBUFFER , rbo)
             glRenderbufferStorage(GL_RENDERBUFFER , GL_DEPTH24_STENCIL8 , width , height)
-            glFramebufferRenderbuffer(GL_FRAMEBUFFER , GL_DEPTH_STENCIL_ATTACHMENT ,
-                                      GL_RENDERBUFFER , rbo)
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER , GL_DEPTH_STENCIL_ATTACHMENT , GL_RENDERBUFFER , rbo)
             
             if glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE:
-                print("FBO" , i , "is not complete")
+                print(f"FBO {pass_type.name} incomplete")
             
-            self.fbos.append(fbo)
-            self.textures.append(tex)
+            self.fbos[pass_type] = fbo
+            self.textures[pass_type] = tex
         
         glBindFramebuffer(GL_FRAMEBUFFER , 0)
     
@@ -188,6 +206,17 @@ class GSGRenderSystem(QOpenGLWidget):
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, buf)  # binding = index
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
             binding += 1
+            
+    def bind_fbo_textures(self , shader_program):
+        """Bind all FBO textures to consecutive texture units for sampling in a shader."""
+        glUseProgram(shader_program)
+        for i , (pass_type , tex) in enumerate(self.textures.items()):
+            glActiveTexture(GL_TEXTURE0 + i)
+            glBindTexture(GL_TEXTURE_2D , tex)
+            # optional: set a uniform in the shader (e.g., sampler2D array)
+            loc = glGetUniformLocation(shader_program , f"fbo_tex_{pass_type.name.lower()}")
+            if loc != -1:
+                glUniform1i(loc , i)
     
     @staticmethod
     def load_shader_program(vertex_path , fragment_path):
