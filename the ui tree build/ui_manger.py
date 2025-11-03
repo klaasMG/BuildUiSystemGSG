@@ -5,13 +5,14 @@ from PyQt5.QtCore import QTimer
 import numpy as np
 from widget_data import WidgetDataType
 
+
 class GSGWidget:
     FLAG_VISIBLE = 1 << 0
     FLAG_RENDER = 1 << 1
     FLAG_DIRTY = 1 << 2
     FLAG_NEEDS_LAYOUT = 1 << 3
     
-    def __init__(self,flags=0, parent = None):
+    def __init__(self , flags=0 , parent=None):
         self.id = 0
         self.children = {}
         self.flags = flags
@@ -33,22 +34,23 @@ class GSGWidget:
             child.parent.remove_child(child)
         self.children[child.id] = child
         child.parent = self
-        
-    def remove_child(self, child, manager=None):
+    
+    def remove_child(self , child , manager=None):
         if child.id in self.children:
             del self.children[child.id]
         child.parent = None
         if manager:
             manager.remove_widget_subtree(child)
-    
+
+
 class GSGUiManager:
     def __init__(self):
         self.widget_data = {}
         self.widget_max = 10000
-        self.init_widget_data(widget_data_types={1: (WidgetDataType.POSITION , (self.widget_max * 6 , np.int64)) ,
-                                                 2: (WidgetDataType.SHADER_PASS , (self.widget_max , np.int16)) ,
-                                                 3: (WidgetDataType.COLOUR , (self.widget_max * 4 , np.int16)) ,
-                                                 4: (WidgetDataType.SHAPE , (self.widget_max , np.int16)) ,
+        self.init_widget_data(widget_data_types={1: (WidgetDataType.POSITION , (self.widget_max * 6 , np.int32)) ,
+                                                 2: (WidgetDataType.SHADER_PASS , (self.widget_max , np.int32)) ,
+                                                 3: (WidgetDataType.COLOUR , (self.widget_max * 4 , np.int32)) ,
+                                                 4: (WidgetDataType.SHAPE , (self.widget_max , np.int32)) ,
                                                  5: (WidgetDataType.ASSETS_ID , (self.widget_max , np.int32)) ,
                                                  6: (WidgetDataType.TEXT_ID , (self.widget_max , np.int32)) ,
                                                  7: (WidgetDataType.PARENT , (self.widget_max , np.int32))})
@@ -58,7 +60,7 @@ class GSGUiManager:
         self.GSG_renderer_system = None
         self.root = GSGWidget(0)
         self.append_widget(self.root)
-        
+    
     def run_ui_manager(self):
         self.running = True
         self.app = QApplication(sys.argv)
@@ -70,15 +72,15 @@ class GSGUiManager:
         self.frame_timer.start(16)  # ~60 FPS
         
         sys.exit(self.app.exec_())
-        
+    
     def update_ui_manager(self):
         self.update_widgets()
         self.GSG_renderer_system.update()
-        
+    
     def update_widgets(self):
         pass
-        
-    def append_widget(self,widget):
+    
+    def append_widget(self , widget):
         if self.free_ids:
             widget.id = self.free_ids.pop()
         else:
@@ -87,17 +89,17 @@ class GSGUiManager:
         self.widgets_by_id[widget.id] = widget
         
         self.set_widget_defaults(widget)
-        
-    def update_widget(self, widget, data = None):
+    
+    def update_widget(self , widget , data=None):
         if not data or len(data) != 14 or data == [-1] * 14:
             return
         i = widget.id
         pos = data[0:6]
         col = data[6:10]
-        for p, j in enumerate(pos):
+        for p , j in enumerate(pos):
             if j == -1:
                 pos[p] = self.widget_data[WidgetDataType.POSITION][i * 4 + p]
-        for p, j in enumerate(col):
+        for p , j in enumerate(col):
             if j == -1:
                 pos[p] = self.widget_data[WidgetDataType.COLOUR][i * 4 + p]
         self.widget_data[WidgetDataType.POSITION][i * 6:i * 6 + 6] = pos
@@ -109,8 +111,8 @@ class GSGUiManager:
         self.widget_data[WidgetDataType.ASSETS_ID][i] = data[13] if data[13] != -1 else self.widget_data[WidgetDataType.ASSETS_ID][i]
         if self.GSG_renderer_system:
             self.GSG_renderer_system.vertices[i * 5:i * 5 + 3] = pos[0:3]
-        
-    def set_widget_defaults(self,widget,data = None):
+    
+    def set_widget_defaults(self , widget , data=None):
         if not data or len(data) != 14:
             data = [-1] * 14
         i = widget.id
@@ -128,16 +130,17 @@ class GSGUiManager:
     
     def clear_widget_data(self , wid):
         default = -1
-        self.widget_data[WidgetDataType.POSITION][wid * 6:wid * 6 + 6] = [default , default , default , default , default , default]
+        self.widget_data[WidgetDataType.POSITION][wid * 6:wid * 6 + 6] = [default , default , default , default ,
+                                                                          default , default]
         self.widget_data[WidgetDataType.COLOUR][wid * 4:wid * 4 + 4] = [default , default , default , default]
         self.widget_data[WidgetDataType.SHADER_PASS][wid] = default
         self.widget_data[WidgetDataType.SHAPE][wid] = default
         self.widget_data[WidgetDataType.ASSETS_ID][wid] = default
         self.widget_data[WidgetDataType.TEXT_ID][wid] = default
         self.widget_data[WidgetDataType.PARENT][wid] = default
-        
-    def init_widget_data(self, widget_data_types: dict):
-        for key , (size, dtype) in widget_data_types.values():
+    
+    def init_widget_data(self , widget_data_types: dict):
+        for key , (size , dtype) in widget_data_types.values():
             arr = np.full(size , -1 , dtype=dtype)
             self.widget_data[key] = arr
     
@@ -156,7 +159,8 @@ class GSGUiManager:
             
             # clear children
             w.children.clear()
-            
+
+
 if __name__ == "__main__":
     manager = GSGUiManager()
     manager.run_ui_manager()
