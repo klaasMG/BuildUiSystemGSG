@@ -112,7 +112,13 @@ class GSGRenderSystem(QOpenGLWidget):
             glBufferSubData(GL_SHADER_STORAGE_BUFFER , 0 , arr.nbytes , arr)
     
     def update_geometry(self):
-        pass
+        """
+        Resets the VBO for the current frame.
+        The vertex data is assumed to already be correct in self.vertices.
+        """
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
+        glBufferSubData(GL_ARRAY_BUFFER, 0, self.vertices.nbytes, self.vertices)
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
     
     def init_shaders(self , shader_dir: str):
         self.map_shader_program = self.load_shader_program(f"{shader_dir}/map_vert.glsl" ,
