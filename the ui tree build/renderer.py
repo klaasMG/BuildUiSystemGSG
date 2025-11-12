@@ -40,6 +40,8 @@ class GSGRenderSystem(QOpenGLWidget):
         self.assets_to_update = {}
         self.widget_max = self.GSG_gui_system.widget_max
         self.vertices = np.full((self.widget_max * 5) , 0.0 , dtype=np.float32)
+        self.shader_pass_right = 0
+        self.locations_shader_passes = []
     
     def initializeGL(self):
         glEnable(GL_BLEND)
@@ -53,38 +55,39 @@ class GSGRenderSystem(QOpenGLWidget):
             assets_to_load={1: (AssetDataType.IMAGE_ASSET , ("assets/map.png" , 0))})  # load map, UI assets
         self.init_FBOs(self.width() , self.height())  # create offscreen framebuffers for passes
         self.init_SSBOs(
-            ssbo_specs={1: WidgetDataType.POSITION , 2: WidgetDataType.SHADER_PASS , 3: WidgetDataType.COLOUR ,
-                        4: WidgetDataType.SHAPE , 5: WidgetDataType.ASSETS_ID , 6: WidgetDataType.TEXT_ID ,
-                        7: WidgetDataType.PARENT})  # upload per-widget arrays: position, color, flags, etc.
+            ssbo_specs={0: WidgetDataType.POSITION , 1: WidgetDataType.SHADER_PASS , 2: WidgetDataType.COLOUR ,
+                        3: WidgetDataType.SHAPE , 4: WidgetDataType.ASSETS_ID , 5: WidgetDataType.TEXT_ID ,
+                        6: WidgetDataType.PARENT})  # upload per-widget arrays: position, color, flags, etc.
     
     def paintGL(self):
         self.update_ssbo()
         self.update_assets(self.assets_to_update)
         self.update_geometry()
+        self.shader_pass_uniform_reset()
         
         # 1️⃣ Map pass
         glBindFramebuffer(GL_FRAMEBUFFER , self.fbos[ShaderPass.PASS_MAP])
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glUseProgram(self.map_shader_program)
-        self.render_widgets(pass_type=ShaderPass.PASS_MAP)
+        self.shader_pass_uniform_update()
         
         # 2️⃣ Basic widgets
         glBindFramebuffer(GL_FRAMEBUFFER , self.fbos[ShaderPass.PASS_BASIC])  # render to screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glUseProgram(self.basic_widget_shader_program)
-        self.render_widgets(pass_type=ShaderPass.PASS_BASIC)
+        self.shader_pass_uniform_update()
         
         # 3️⃣ Complex widgets (offscreen first)
         glBindFramebuffer(GL_FRAMEBUFFER , self.fbos[ShaderPass.PASS_COMPLEX])
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glUseProgram(self.complex_widget_shader_program)
-        self.render_widgets(pass_type=ShaderPass.PASS_COMPLEX)
+        self.shader_pass_uniform_update()
         
         # 4️⃣ Text pass
         glBindFramebuffer(GL_FRAMEBUFFER , self.fbos[ShaderPass.PASS_TEXT])
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glUseProgram(self.text_shader_program)
-        self.render_widgets(pass_type=ShaderPass.PASS_TEXT)
+        self.shader_pass_uniform_update()
         
         glBindFramebuffer(GL_FRAMEBUFFER , 0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -102,6 +105,17 @@ class GSGRenderSystem(QOpenGLWidget):
         glBindVertexArray(self.vao)
         glDrawArrays(GL_TRIANGLES , 0 , 6)
         glBindVertexArray(0)
+        
+    def shader_pass_uniform_update(self):
+        self.shader_pass_right += 1
+        glUniform1i(self.locations_shader_passes[self.shader_pass_right - 1],self.shader_pass_right)
+        
+    def shader_pass_uniform_reset(self):
+        self.shader_pass_right = 0
+        
+    def declare_uniform(self, shader_program):
+        pass_new_shader_loc = glGetUniformLocation(shader_program, "shader_pass_right")
+        self.locations_shader_passes.append(pass_new_shader_loc)
     
     def render_widgets(self , pass_type):
         pass
@@ -112,28 +126,37 @@ class GSGRenderSystem(QOpenGLWidget):
             glBufferSubData(GL_SHADER_STORAGE_BUFFER , 0 , arr.nbytes , arr)
     
     def update_geometry(self):
-        pass
+        """
+                Resets the VBO for the current frame.
+                The vertex data is assumed to already be correct in self.vertices.
+                """
+        glBindBuffer(GL_ARRAY_BUFFER , self.vbo)
+        glBufferSubData(GL_ARRAY_BUFFER , 0 , self.vertices.nbytes , self.vertices)
+        glBindBuffer(GL_ARRAY_BUFFER , 0)
     
     def init_shaders(self , shader_dir: str):
         self.map_shader_program = self.load_shader_program(f"{shader_dir}/map_vert.glsl" ,
                                                            f"{shader_dir}/map_frag.glsl")
+        self.declare_uniform(self.map_shader_program)
         self.basic_widget_shader_program = self.load_shader_program(f"{shader_dir}/basic_vert.glsl" ,
                                                                     f"{shader_dir}/basic_frag.glsl")
+        self.declare_uniform(self.basic_widget_shader_program)
         self.complex_widget_shader_program = self.load_shader_program(f"{shader_dir}/complex_vert.glsl" ,
                                                                       f"{shader_dir}/complex_frag.glsl")
+        self.declare_uniform(self.complex_widget_shader_program)
         self.text_shader_program = self.load_shader_program(f"{shader_dir}/text_vert.glsl" ,
                                                             f"{shader_dir}/text_frag.glsl")
+        self.declare_uniform(self.text_shader_program)
         self.final_composite_program = self.load_shader_program(f"{shader_dir}/final_vert.glsl" ,
                                                                 f"{shader_dir}/final_frag.glsl")
     
     def init_geometry(self):
-        
         self.vao = glGenVertexArrays(1)
         glBindVertexArray(self.vao)
         
         self.vbo = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER , self.vbo)
-        glBufferData(GL_ARRAY_BUFFER , self.vertices.nbytes , self.vertices , GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER , self.vertices.nbytes , self.vertices , GL_DYNAMIC_DRAW)
         
         stride = 5 * 4  # 5 floats * 4 bytes
         glVertexAttribPointer(0 , 3 , GL_FLOAT , GL_FALSE , stride , ctypes.c_void_p(0))  # pos (x,y,z)
@@ -199,8 +222,8 @@ class GSGRenderSystem(QOpenGLWidget):
         size = number of elements
         dtype = numpy dtype
         """
-        binding = 0
-        for name in ssbo_specs.values():
+        max_ssbos = glGetIntegerv(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS)
+        for binding, name in ssbo_specs.items():
             # Create numpy array for CPU-side storage
             arr = self.GSG_gui_system.widget_data[name]
             
@@ -212,7 +235,6 @@ class GSGRenderSystem(QOpenGLWidget):
             glBufferData(GL_SHADER_STORAGE_BUFFER , arr.nbytes , arr , GL_DYNAMIC_DRAW)
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER , binding , buf)  # binding = index
             glBindBuffer(GL_SHADER_STORAGE_BUFFER , 0)
-            binding += 1
     
     def bind_fbo_textures(self , shader_program):
         """Bind all FBO textures to consecutive texture units for sampling in a shader."""
