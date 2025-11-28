@@ -78,6 +78,7 @@ class GSGRenderSystem(QOpenGLWidget):
         glDepthFunc(GL_LESS)
         glEnable(GL_PROGRAM_POINT_SIZE)
         
+        self.init_fullscreen_quad()
         self.init_shaders("assets/shaders")  # compile your vertex & fragment shaders
         self.init_geometry()  # VAO/VBO for quads, shapes
         self.init_assets(
@@ -144,8 +145,8 @@ class GSGRenderSystem(QOpenGLWidget):
                 glUniform1i(loc , i)
         
         # draw full-screen quad (your VAO already works)
-        glBindVertexArray(self.vao)
-        glDrawArrays(GL_TRIANGLES , 0 , 6)
+        glBindVertexArray(self.fs_vao)
+        glDrawArrays(GL_TRIANGLES, 0, 6)
         glBindVertexArray(0)
         
     def shader_pass_uniform_update_pass(self):
@@ -304,6 +305,35 @@ class GSGRenderSystem(QOpenGLWidget):
             loc = glGetUniformLocation(shader_program , f"fbo_tex_{pass_type.name.lower()}")
             if loc != -1:
                 glUniform1i(loc , i)
+    
+    def init_fullscreen_quad(self):
+        # positions + UV
+        quad_vertices = np.array([
+            # x, y,   u, v
+            -1.0, -1.0, 0.0, 0.0,
+            1.0, -1.0, 1.0, 0.0,
+            1.0, 1.0, 1.0, 1.0,
+            
+            -1.0, -1.0, 0.0, 0.0,
+            1.0, 1.0, 1.0, 1.0,
+            -1.0, 1.0, 0.0, 1.0,
+        ], dtype=np.float32)
+        
+        self.fs_vao = glGenVertexArrays(1)
+        glBindVertexArray(self.fs_vao)
+        
+        self.fs_vbo = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, self.fs_vbo)
+        glBufferData(GL_ARRAY_BUFFER, quad_vertices.nbytes, quad_vertices, GL_STATIC_DRAW)
+        
+        stride = 4 * 4  # 4 floats per vertex
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, ctypes.c_void_p(0))  # pos
+        glEnableVertexAttribArray(0)
+        
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, ctypes.c_void_p(8))  # uv
+        glEnableVertexAttribArray(1)
+        
+        glBindVertexArray(0)
     
     @staticmethod
     def load_shader_program(vertex_path , fragment_path):
