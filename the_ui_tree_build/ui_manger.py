@@ -71,8 +71,8 @@ class GSGUiManager:
         self.ui_manager_queue: EventQueue = event_system.add_queue("ui_manager")
         self.root = GSGWidget(0)
         self.append_widget(self.root,data=None)
-        self.width = 0
-        self.height = 0
+        self.width = 600
+        self.height = 800
         self.app = app(sys.argv , event_system=event_system)
     
     def run_ui_manager(self):
@@ -163,6 +163,7 @@ class GSGUiManager:
     
     def init_widget_data(self , widget_data_types: dict):
         for key , (size , dtype) in widget_data_types.values():
+            print((key ,size , dtype))
             arr = np.full(size , -1 , dtype=dtype)
             self.widget_data[key] = arr
     
