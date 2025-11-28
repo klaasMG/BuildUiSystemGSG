@@ -80,6 +80,9 @@ class GSGUiManager:
         self.GSG_renderer_system = GSGRenderSystem(self)
         self.GSG_renderer_system.show()
         
+        self.sqaure = GSGWidget(parent=self.root)
+        self.append_widget(self.sqaure, [4, 16, 1, 10, 10, 1, 255, 0, 0, 255, 0, -1, -1, -1, ])
+        
         self.frame_timer = QTimer()
         self.frame_timer.timeout.connect(self.update_ui_manager)
         self.frame_timer.start(16)  # ~60 FPS
@@ -101,8 +104,7 @@ class GSGUiManager:
         return None
     
     def update_widgets(self):
-        self.sqaure = GSGWidget(parent=self.root)
-        self.append_widget(self.sqaure,[])
+        pass
     
     def append_widget(self , widget, data):
         if self.free_ids:
@@ -133,11 +135,6 @@ class GSGUiManager:
         self.widget_data[WidgetDataType.PARENT][i] = widget.parent.id if widget.parent else self.widget_data[WidgetDataType.PARENT][i]
         self.widget_data[WidgetDataType.TEXT_ID][i] = data[12] if data[12] != -1 else self.widget_data[WidgetDataType.TEXT_ID][i]
         self.widget_data[WidgetDataType.ASSETS_ID][i] = data[13] if data[13] != -1 else self.widget_data[WidgetDataType.ASSETS_ID][i]
-        if self.GSG_renderer_system:
-            width = self.GSG_renderer_system.width()
-            height = self.GSG_renderer_system.height()
-            gsg_pos = [pos[0] / width , pos[1] / height , pos[2] / self.depth_layers]
-            self.GSG_renderer_system.vertices[i * 5:i * 5 + 3] = gsg_pos
     
     def set_widget_defaults(self , widget , data=None):
         if not data or len(data) != 14:
@@ -152,11 +149,6 @@ class GSGUiManager:
         self.widget_data[WidgetDataType.PARENT][i] = widget.parent.id if widget.parent else -1
         self.widget_data[WidgetDataType.TEXT_ID][i] = data[12]
         self.widget_data[WidgetDataType.ASSETS_ID][i] = data[13]
-        if self.GSG_renderer_system:
-            width = self.GSG_renderer_system.width()
-            height = self.GSG_renderer_system.height()
-            gsg_pos = [pos[0] / width, pos[1] / height, pos[2] / self.depth_layers]
-            self.GSG_renderer_system.vertices[i * 5:i * 5 + 3] = gsg_pos
     
     def clear_widget_data(self , wid):
         default = -1
