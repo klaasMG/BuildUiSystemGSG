@@ -34,7 +34,7 @@ layout(std430, binding = 6) buffer WidgetDataParent{
 
 void main() {
     vec4 colour = vec4(1.0);
-    if (gl_FragCoord.x < pos_data[vWidgetIndex * 6] && gl_FragCoord.y < pos_data[vWidgetIndex * 6 + 1]){
+    if (gl_FragCoord.x < pos_data[vWidgetIndex * 6 + 3] && gl_FragCoord.y < pos_data[vWidgetIndex * 6 + 4]){
         colour = vec4((col_data[vWidgetIndex * 4]) / 255, (col_data[vWidgetIndex * 4 + 1]) / 255, (col_data[vWidgetIndex * 4 + 2]) / 255, (col_data[vWidgetIndex * 4 + 3]) / 255);
     }
     else{
