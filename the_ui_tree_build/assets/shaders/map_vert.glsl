@@ -26,7 +26,7 @@ void main() {
 
     int shader_pass = pass_data[id];
 
-    if (shader_pass_right - shader_pass == 0){
+    if (shader_pass_right == shader_pass){
     int Widget_width = pos_data[id * 6 + 3] - pos_data[id * 6];
     int Widget_heigth = pos_data[id * 6 + 4] - pos_data[id * 6 + 1];
 
