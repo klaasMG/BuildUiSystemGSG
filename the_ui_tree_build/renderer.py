@@ -57,6 +57,7 @@ class GSGRenderSystem(QOpenGLWidget):
         event_data = (width, height)
         event = (priority, destination, event_type, event_data)
         self.render_queue.send_event(event)
+        self.init_FBOs(width,height)
     
     def initializeGL(self):
         width = self.width()
@@ -75,6 +76,7 @@ class GSGRenderSystem(QOpenGLWidget):
         glBlendFunc(GL_SRC_ALPHA , GL_ONE_MINUS_SRC_ALPHA)
         glEnable(GL_DEPTH_TEST)  # turn on depth testing
         glDepthFunc(GL_LESS)
+        glEnable(GL_PROGRAM_POINT_SIZE)
         
         self.init_shaders("assets/shaders")  # compile your vertex & fragment shaders
         self.init_geometry()  # VAO/VBO for quads, shapes
@@ -92,13 +94,15 @@ class GSGRenderSystem(QOpenGLWidget):
         self.update_geometry()
         self.shader_pass_uniform_reset_pass()
         self.reset_uniform_size()
-        
+        widget_count = self.GSG_gui_system.next_id
         # 1️⃣ Map pass
         glBindFramebuffer(GL_FRAMEBUFFER , self.fbos[ShaderPass.PASS_MAP])
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glUseProgram(self.map_shader_program)
         self.shader_pass_uniform_update_pass()
         self.set_uniform_size()
+        glBindVertexArray(self.vao)
+        glDrawArrays(GL_POINTS, 0, widget_count)
         
         # 2️⃣ Basic widgets
         glBindFramebuffer(GL_FRAMEBUFFER , self.fbos[ShaderPass.PASS_BASIC])  # render to screen
@@ -106,6 +110,8 @@ class GSGRenderSystem(QOpenGLWidget):
         glUseProgram(self.basic_widget_shader_program)
         self.shader_pass_uniform_update_pass()
         self.set_uniform_size()
+        glBindVertexArray(self.vao)
+        glDrawArrays(GL_POINTS, 0, widget_count)
         
         # 3️⃣ Complex widgets (offscreen first)
         glBindFramebuffer(GL_FRAMEBUFFER , self.fbos[ShaderPass.PASS_COMPLEX])
@@ -113,6 +119,8 @@ class GSGRenderSystem(QOpenGLWidget):
         glUseProgram(self.complex_widget_shader_program)
         self.shader_pass_uniform_update_pass()
         self.set_uniform_size()
+        glBindVertexArray(self.vao)
+        glDrawArrays(GL_POINTS, 0, widget_count)
         
         # 4️⃣ Text pass
         glBindFramebuffer(GL_FRAMEBUFFER , self.fbos[ShaderPass.PASS_TEXT])
@@ -120,8 +128,10 @@ class GSGRenderSystem(QOpenGLWidget):
         glUseProgram(self.text_shader_program)
         self.shader_pass_uniform_update_pass()
         self.set_uniform_size()
+        glBindVertexArray(self.vao)
+        glDrawArrays(GL_POINTS, 0, widget_count)
         
-        glBindFramebuffer(GL_FRAMEBUFFER , 0)
+        glBindFramebuffer(GL_FRAMEBUFFER , self.defaultFramebufferObject())
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glUseProgram(self.final_composite_program)
         

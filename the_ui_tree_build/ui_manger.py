@@ -81,7 +81,7 @@ class GSGUiManager:
         self.GSG_renderer_system.show()
         
         self.sqaure = GSGWidget(parent=self.root)
-        self.append_widget(self.sqaure, [4, 16, 1, 10, 10, 1, 255, 0, 0, 255, 0, -1, -1, -1, ])
+        self.append_widget(self.sqaure, [4, 16, 1, 10, 10, 1, 255, 0, 0, 255, 2, -1, -1, -1, ])
         
         self.frame_timer = QTimer()
         self.frame_timer.timeout.connect(self.update_ui_manager)

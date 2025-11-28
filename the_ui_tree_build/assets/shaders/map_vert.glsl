@@ -39,7 +39,6 @@ void main() {
     }
     shape_x = Widget_width;
     shape_y = Widget_heigth;
-    gl_Position = vec4(aPos, 1.0);
     gl_PointSize = float(point_size);
     }
 }
