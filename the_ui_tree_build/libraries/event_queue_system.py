@@ -166,7 +166,7 @@ class EventSystem:
             
             else:
                 return False  # unknown type
-        
+        #for the push
         return True
     
     def add_message_type(self, event_type, event_check):
