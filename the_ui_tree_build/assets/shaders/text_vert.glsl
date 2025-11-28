@@ -20,12 +20,9 @@ void main() {
     uint id = gl_VertexID;      // auto counts 0..N-1
     vWidgetIndex = id;
 
-    gl_Position = vec4(
-    float(pos_data[vWidgetIndex * 6]) / float(screen_x),
-    float(pos_data[vWidgetIndex * 6 + 1]) / float(screen_y),
-    float(pos_data[vWidgetIndex * 6 + 2]) / 255.0,
-    1.0
-    );
+    float x_ndc = float(pos_data[vWidgetIndex * 6]) / float(screen_x) * 2.0 - 1.0;
+    float y_ndc = float(pos_data[vWidgetIndex * 6 + 1]) / float(screen_y) * 2.0 - 1.0;
+    gl_Position = vec4(x_ndc, y_ndc, float(pos_data[vWidgetIndex * 6 + 2]) / 255.0, 1.0);
 
     int shader_pass = pass_data[id];
 
