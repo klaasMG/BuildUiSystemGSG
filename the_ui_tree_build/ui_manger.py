@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTimer
 import numpy as np
 from widget_data import WidgetDataType
-
+from event_system import event_system, EventQueue, EventTypeEnum
 
 class GSGWidget:
     FLAG_VISIBLE = 1 << 0
@@ -41,7 +41,16 @@ class GSGWidget:
         child.parent = None
         if manager:
             manager.remove_widget_subtree(child)
-
+class app(QApplication):
+    def __init__(self, *args, event_system = None, **kwargs):
+        super().__init__(*args , **kwargs)
+        self.event_system = event_system
+        self.aboutToQuit.connect(self.on_quit)
+    
+    def on_quit(self):
+        print("Application is quitting")
+        if self.event_system is not None:
+            self.event_system.stop_event_system()
 
 class GSGUiManager:
     def __init__(self):
@@ -59,12 +68,15 @@ class GSGUiManager:
         self.free_ids = []
         self.next_id = 1
         self.GSG_renderer_system = None
+        self.ui_manager_queue: EventQueue = event_system.add_queue("ui_manager")
         self.root = GSGWidget(0)
         self.append_widget(self.root,data=None)
+        self.width = 0
+        self.height = 0
+        self.app = app(sys.argv , event_system=event_system)
     
     def run_ui_manager(self):
         self.running = True
-        self.app = QApplication(sys.argv)
         self.GSG_renderer_system = GSGRenderSystem(self)
         self.GSG_renderer_system.show()
         
@@ -75,8 +87,18 @@ class GSGUiManager:
         sys.exit(self.app.exec_())
     
     def update_ui_manager(self):
+        event = self.ui_manager_queue.receive_event()
         self.update_widgets()
         self.GSG_renderer_system.update()
+        
+    def use_event(self, event):
+        event_type, data = event
+        if event_type == 255:
+            return None
+        if event_type == EventTypeEnum.Resize:
+            self.width = data[0]
+            self.height = data[1]
+        return None
     
     def update_widgets(self):
         self.sqaure = GSGWidget(parent=self.root)

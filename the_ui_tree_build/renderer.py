@@ -1,10 +1,10 @@
 from PyQt5.QtWidgets import QOpenGLWidget
 import numpy as np
 from OpenGL.GL import *
-from enum import Enum , auto
+from enum import Enum
 from widget_data import WidgetDataType
 from PIL import Image
-
+from event_system import event_system, EventQueue, EventTypeEnum
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTimer
 import sys
@@ -41,9 +41,36 @@ class GSGRenderSystem(QOpenGLWidget):
         self.widget_max = self.GSG_gui_system.widget_max
         self.vertices = np.full((self.widget_max * 5) , 0.0 , dtype=np.float32)
         self.shader_pass_right = 0
+        self.shader_pass_size = 0
         self.locations_shader_passes = []
+        self.locations_size_passes = []
+        self.render_queue: EventQueue = event_system.add_queue("renderer")
+    
+    def resizeGL(self, width, height):
+        priority = 0
+        destination = "ui_manager"
+        event_type = EventTypeEnum.Resize
+        if not isinstance(width, int):
+            int(width)
+        if not isinstance(height, int):
+            int(height)
+        event_data = (width, height)
+        event = (priority, destination, event_type, event_data)
+        self.render_queue.send_event(event)
     
     def initializeGL(self):
+        width = self.width()
+        height = self.height()
+        priority = 0
+        destination = "ui_manager"
+        event_type = EventTypeEnum.Resize
+        if not isinstance(width , int):
+            int(width)
+        if not isinstance(height , int):
+            int(height)
+        event_data = (width , height)
+        event = (priority , destination , event_type , event_data)
+        self.render_queue.send_event(event)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA , GL_ONE_MINUS_SRC_ALPHA)
         glEnable(GL_DEPTH_TEST)  # turn on depth testing
@@ -63,31 +90,36 @@ class GSGRenderSystem(QOpenGLWidget):
         self.update_ssbo()
         self.update_assets(self.assets_to_update)
         self.update_geometry()
-        self.shader_pass_uniform_reset()
+        self.shader_pass_uniform_reset_pass()
+        self.reset_uniform_size()
         
         # 1️⃣ Map pass
         glBindFramebuffer(GL_FRAMEBUFFER , self.fbos[ShaderPass.PASS_MAP])
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glUseProgram(self.map_shader_program)
-        self.shader_pass_uniform_update()
+        self.shader_pass_uniform_update_pass()
+        self.set_uniform_size()
         
         # 2️⃣ Basic widgets
         glBindFramebuffer(GL_FRAMEBUFFER , self.fbos[ShaderPass.PASS_BASIC])  # render to screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glUseProgram(self.basic_widget_shader_program)
-        self.shader_pass_uniform_update()
+        self.shader_pass_uniform_update_pass()
+        self.set_uniform_size()
         
         # 3️⃣ Complex widgets (offscreen first)
         glBindFramebuffer(GL_FRAMEBUFFER , self.fbos[ShaderPass.PASS_COMPLEX])
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glUseProgram(self.complex_widget_shader_program)
-        self.shader_pass_uniform_update()
+        self.shader_pass_uniform_update_pass()
+        self.set_uniform_size()
         
         # 4️⃣ Text pass
         glBindFramebuffer(GL_FRAMEBUFFER , self.fbos[ShaderPass.PASS_TEXT])
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glUseProgram(self.text_shader_program)
-        self.shader_pass_uniform_update()
+        self.shader_pass_uniform_update_pass()
+        self.set_uniform_size()
         
         glBindFramebuffer(GL_FRAMEBUFFER , 0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -106,19 +138,31 @@ class GSGRenderSystem(QOpenGLWidget):
         glDrawArrays(GL_TRIANGLES , 0 , 6)
         glBindVertexArray(0)
         
-    def shader_pass_uniform_update(self):
+    def shader_pass_uniform_update_pass(self):
         self.shader_pass_right += 1
         glUniform1i(self.locations_shader_passes[self.shader_pass_right - 1],self.shader_pass_right)
         
-    def shader_pass_uniform_reset(self):
+    def shader_pass_uniform_reset_pass(self):
         self.shader_pass_right = 0
         
-    def declare_uniform(self, shader_program):
+    def declare_uniform_pass(self, shader_program):
         pass_new_shader_loc = glGetUniformLocation(shader_program, "shader_pass_right")
         self.locations_shader_passes.append(pass_new_shader_loc)
     
-    def render_widgets(self , pass_type):
-        pass
+    def declare_uniform_size(self, shader_program):
+        shader_size_loc = glGetUniformLocation(shader_program, "screen_size")
+        self.locations_size_passes.append(shader_size_loc)
+    
+    def set_uniform_size(self):
+        self.shader_pass_size += 1
+        size = np.array([self.width(), self.height()], dtype=np.uint32)
+        location = self.locations_size_passes[self.shader_pass_size - 1]
+        if location == -1:
+            return
+        glUniform2uiv(location,1,size)
+    
+    def reset_uniform_size(self):
+        self.shader_pass_size = 0
     
     def update_ssbo(self):
         for name , arr in self.GSG_gui_system.widget_data.items():
@@ -137,16 +181,20 @@ class GSGRenderSystem(QOpenGLWidget):
     def init_shaders(self , shader_dir: str):
         self.map_shader_program = self.load_shader_program(f"{shader_dir}/map_vert.glsl" ,
                                                            f"{shader_dir}/map_frag.glsl")
-        self.declare_uniform(self.map_shader_program)
+        self.declare_uniform_size(self.map_shader_program)
+        self.declare_uniform_pass(self.map_shader_program)
         self.basic_widget_shader_program = self.load_shader_program(f"{shader_dir}/basic_vert.glsl" ,
                                                                     f"{shader_dir}/basic_frag.glsl")
-        self.declare_uniform(self.basic_widget_shader_program)
+        self.declare_uniform_size(self.basic_widget_shader_program)
+        self.declare_uniform_pass(self.basic_widget_shader_program)
         self.complex_widget_shader_program = self.load_shader_program(f"{shader_dir}/complex_vert.glsl" ,
                                                                       f"{shader_dir}/complex_frag.glsl")
-        self.declare_uniform(self.complex_widget_shader_program)
+        self.declare_uniform_size(self.complex_widget_shader_program)
+        self.declare_uniform_pass(self.complex_widget_shader_program)
         self.text_shader_program = self.load_shader_program(f"{shader_dir}/text_vert.glsl" ,
                                                             f"{shader_dir}/text_frag.glsl")
-        self.declare_uniform(self.text_shader_program)
+        self.declare_uniform_size(self.text_shader_program)
+        self.declare_uniform_pass(self.text_shader_program)
         self.final_composite_program = self.load_shader_program(f"{shader_dir}/final_vert.glsl" ,
                                                                 f"{shader_dir}/final_frag.glsl")
     
@@ -233,7 +281,7 @@ class GSGRenderSystem(QOpenGLWidget):
             
             glBindBuffer(GL_SHADER_STORAGE_BUFFER , buf)
             glBufferData(GL_SHADER_STORAGE_BUFFER , arr.nbytes , arr , GL_DYNAMIC_DRAW)
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER , binding , buf)  # binding = index
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER , binding , buf)
             glBindBuffer(GL_SHADER_STORAGE_BUFFER , 0)
     
     def bind_fbo_textures(self , shader_program):
