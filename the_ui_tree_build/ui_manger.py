@@ -57,13 +57,13 @@ class GSGUiManager:
         self.depth_layers = 100
         self.widget_data = {}
         self.widget_max = 10000
-        self.init_widget_data(widget_data_types={0: (WidgetDataType.POSITION , (self.widget_max * 6 , np.int32)) ,
-                                                 1: (WidgetDataType.SHADER_PASS , (self.widget_max , np.int32)) ,
-                                                 2: (WidgetDataType.COLOUR , (self.widget_max * 4 , np.int32)) ,
-                                                 3: (WidgetDataType.SHAPE , (self.widget_max , np.int32)) ,
-                                                 4: (WidgetDataType.ASSETS_ID , (self.widget_max , np.int32)) ,
-                                                 5: (WidgetDataType.TEXT_ID , (self.widget_max , np.int32)) ,
-                                                 6: (WidgetDataType.PARENT , (self.widget_max , np.int32))})
+        self.init_widget_data(widget_data_types={ WidgetDataType.POSITION : (self.widget_max * 6 , np.int32),
+                                                  WidgetDataType.SHADER_PASS : (self.widget_max , np.int32) ,
+                                                  WidgetDataType.COLOUR : (self.widget_max * 4 , np.int32) ,
+                                                  WidgetDataType.SHAPE : (self.widget_max , np.int32) ,
+                                                  WidgetDataType.ASSETS_ID : (self.widget_max , np.int32) ,
+                                                  WidgetDataType.TEXT_ID : (self.widget_max , np.int32) ,
+                                                  WidgetDataType.PARENT : (self.widget_max , np.int32)})
         self.widgets_by_id = {}
         self.free_ids = []
         self.next_id = 1
@@ -162,7 +162,7 @@ class GSGUiManager:
         self.widget_data[WidgetDataType.PARENT][wid] = default
     
     def init_widget_data(self , widget_data_types: dict):
-        for key , (size , dtype) in widget_data_types.values():
+        for key , (size , dtype) in widget_data_types.items():
             arr = np.full(size , -1 , dtype=dtype)
             self.widget_data[key] = arr
     
