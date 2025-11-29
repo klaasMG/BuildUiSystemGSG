@@ -3,6 +3,8 @@ class ShaderPassData:
         self.frag_shader = frag_shader
         self.vert_shader = vert_shader
         self.program = None
+        self.vbo = None
+        self.vao = None
     
     def load(self, renderer):
         """Use your renderer's loader function to compile and link the shader"""
