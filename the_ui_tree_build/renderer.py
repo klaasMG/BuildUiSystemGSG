@@ -2,7 +2,6 @@ from PyQt5.QtWidgets import QOpenGLWidget
 import numpy as np
 from OpenGL.GL import *
 from enum import Enum, auto
-
 from widget_data import WidgetDataType
 from PIL import Image
 from event_system import event_system, EventQueue, EventTypeEnum
@@ -39,7 +38,7 @@ class GSGRenderSystem(QOpenGLWidget):
         self.text = []
         self.text_set = set()
         self.asset_path = set()
-        self.buffers = {}  # name -> buffer id
+        self.buffers: dict[int,WidgetDataType] = {}  # name -> buffer id
         self.assets_to_update = {}
         self.widget_max = self.GSG_gui_system.widget_max
         self.vertices = np.full((self.widget_max * 5) , 0.0 , dtype=np.float32)
