@@ -30,7 +30,6 @@ class AssetDataType(Enum):
 class GSGRenderSystem(QOpenGLWidget):
     def __init__(self , GSG_gui_system):
         super().__init__()
-        self.fullscreen_shader = None
         self.fullscreen_vao = None
         self.fullscreen_vbo = None
         self.GSG_gui_system = GSG_gui_system
@@ -41,10 +40,10 @@ class GSGRenderSystem(QOpenGLWidget):
         self.buffers: dict[int,WidgetDataType] = {}  # name -> buffer id
         self.assets_to_update = {}
         self.widget_max = self.GSG_gui_system.widget_max
-        self.vertices = np.full((self.widget_max * 5) , 0.0 , dtype=np.float32)
+        self.vertices = np.full((self.widget_max * 4) , 0.0 , dtype=np.float32)
         self.quad = np.array([-1.0, -1.0, 0.0, 0.0,1.0, -1.0, 1.0, 0.0,-1.0,  1.0, 0.0, 1.0,-1.0,  1.0, 0.0, 1.0,1.0, -1.0, 1.0, 0.0,1.0,  1.0, 1.0, 1.0,], dtype=np.float32)
         self.render_queue: EventQueue = event_system.add_queue("renderer")
-        self.shader_passes = {ShaderPass.PASS_FINAL: ShaderPassData("assets/shaders/final_frag.glsl", "assets/shaders/final_vert.glsl")}
+        self.shader_passes: dict[ShaderPass, ShaderPassData] = {}
     
     def resizeGL(self, width, height):
         priority = 0
@@ -57,7 +56,6 @@ class GSGRenderSystem(QOpenGLWidget):
         event_data = (width, height)
         event = (priority, destination, event_type, event_data)
         self.render_queue.send_event(event)
-        self.init_FBOs(width,height)
     
     def initializeGL(self):
         width = self.width()
@@ -73,46 +71,44 @@ class GSGRenderSystem(QOpenGLWidget):
         event = (priority , destination , event_type , event_data)
         self.render_queue.send_event(event)
         
+        self.shader_passes[ShaderPass.PASS_FINAL] = ShaderPassData("assets/shaders/final_frag.glsl", "assets/shaders/final_vert.glsl")
+        
         # --- build shader program ---
-        prog_pass_data = self.shader_passes[ShaderPass.PASS_FINAL]
-        
-        prog_pass_data.load(self)
-        
-        prog = prog_pass_data.program
-        
-        self.fullscreen_shader = prog
-        
-        # --- create VAO + VBO for your existing self.quad ---
-        self.fullscreen_vao = glGenVertexArrays(1)
-        self.fullscreen_vbo = glGenBuffers(1)
-        
-        glBindVertexArray(self.fullscreen_vao)
-        glBindBuffer(GL_ARRAY_BUFFER, self.fullscreen_vbo)
-        glBufferData(GL_ARRAY_BUFFER, self.quad.nbytes, self.quad, GL_STATIC_DRAW)
-        
-        stride = 4 * self.quad.itemsize
-        
-        # pos
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, ctypes.c_void_p(0))
-        glEnableVertexAttribArray(0)
-        
-        # uv
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, ctypes.c_void_p(8))
-        glEnableVertexAttribArray(1)
-        
-        glBindBuffer(GL_ARRAY_BUFFER, 0)
-        glBindVertexArray(0)
+        self.init_shaders(self.shader_passes)
+        for shader_pass_type,shader_pass in self.shader_passes.items():
+            # --- create VAO + VBO for your existing self.quad ---
+            shader_pass.assign_vao()
+            shader_pass.assign_vbo()
+            
+            glBindVertexArray(shader_pass.vao)
+            glBindBuffer(GL_ARRAY_BUFFER, shader_pass.vbo)
+            glBufferData(GL_ARRAY_BUFFER, self.quad.nbytes, self.quad, GL_STATIC_DRAW)
+            
+            stride = 4 * self.quad.itemsize
+            
+            # pos
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, ctypes.c_void_p(0))
+            glEnableVertexAttribArray(0)
+            
+            # uv
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, ctypes.c_void_p(8))
+            glEnableVertexAttribArray(1)
+            
+            glBindBuffer(GL_ARRAY_BUFFER, 0)
+            glBindVertexArray(0)
         
     def init_data(self):
         for data in self.GSG_gui_system.widget_data:
-            self.buffers[data] = None
+            self.buffers[data] = self.GSG_gui_system.widget_data[data]
     
     def paintGL(self):
         glClearColor(0.1, 0.1, 0.1, 1.0)
         glClear(GL_COLOR_BUFFER_BIT)
         
-        glUseProgram(self.fullscreen_shader)
-        glBindVertexArray(self.fullscreen_vao)
+        shader_pass = self.shader_passes[ShaderPass.PASS_FINAL]
+        
+        glUseProgram(shader_pass.program)
+        glBindVertexArray(shader_pass.vao)
         glDrawArrays(GL_TRIANGLES, 0, 6)
         glBindVertexArray(0)
     
@@ -129,8 +125,10 @@ class GSGRenderSystem(QOpenGLWidget):
     def update_geometry(self):
         pass
     
-    def init_shaders(self , shader_dir: str):
-        pass
+    def init_shaders(self , shader_dir: dict):
+        for shader_pass in shader_dir.values():
+            shader_pass: ShaderPassData = shader_pass
+            shader_pass.load(self)
     
     def init_geometry(self):
         pass
