@@ -70,6 +70,7 @@ class GSGRenderSystem(QOpenGLWidget):
         event = (priority , destination , event_type , event_data)
         self.render_queue.send_event(event)
         
+        self.shader_passes[ShaderPass.PASS_BASIC] = ShaderPassData("assets/shaders/basic_frag.glsl", "assets/shaders/basic_vert.glsl")
         self.shader_passes[ShaderPass.PASS_FINAL] = ShaderPassData("assets/shaders/final_frag.glsl", "assets/shaders/final_vert.glsl")
         
         # --- build shader program ---
@@ -103,6 +104,7 @@ class GSGRenderSystem(QOpenGLWidget):
     def paintGL(self):
         glClearColor(0.1, 0.1, 0.1, 1.0)
         glClear(GL_COLOR_BUFFER_BIT)
+        self.basic_render_pass()
         self.final_render_pass()
         
     def final_render_pass(self):
@@ -112,7 +114,15 @@ class GSGRenderSystem(QOpenGLWidget):
         glBindVertexArray(shader_pass.vao)
         glDrawArrays(GL_TRIANGLES, 0, 6)
         glBindVertexArray(0)
-    
+        
+    def basic_render_pass(self):
+        shader_pass = self.shader_passes[ShaderPass.PASS_BASIC]
+        
+        glUseProgram(shader_pass.program)
+        glBindVertexArray(shader_pass.vao)
+        glDrawArrays(GL_TRIANGLES, 0, 6)
+        glBindVertexArray(0)
+        
     def update_ssbo(self, data_enum):
         buffer_id = self.buffers.get(data_enum)
         if not buffer_id:
