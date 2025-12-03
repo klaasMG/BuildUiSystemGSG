@@ -172,8 +172,25 @@ class GSGRenderSystem(QOpenGLWidget):
     
     def init_FBOs(self , width , height, shader_pass):
         shader_pass.assign_fbo()
+        glBindFramebuffer(GL_FRAMEBUFFER, shader_pass.fbo)
         
-    
+        shader_pass.assign_text()
+        glBindTexture(GL_TEXTURE_2D, shader_pass.texture)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
+                     GL_RGBA, GL_UNSIGNED_BYTE, None)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                               GL_TEXTURE_2D, shader_pass.texture, 0)
+        
+        status = glCheckFramebufferStatus(GL_FRAMEBUFFER)
+        if status != GL_FRAMEBUFFER_COMPLETE:
+            glBindFramebuffer(GL_FRAMEBUFFER, 0)
+            raise RuntimeError(f"FBO incomplete: {hex(status)}")
+        
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
     def init_SSBOs(self):
         """
         Initializes SSBOs using the parent GSG_gui_system data.
@@ -197,9 +214,6 @@ class GSGRenderSystem(QOpenGLWidget):
             self.buffers[data_enum] = buffer_id
         
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
-    
-    def bind_fbo_textures(self , shader_program):
-        pass
     
     @staticmethod
     def load_shader_program(vertex_path , fragment_path):
