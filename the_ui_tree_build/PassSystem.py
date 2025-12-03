@@ -7,6 +7,8 @@ class ShaderPassData:
         self.program = None
         self.vbo = None
         self.vao = None
+        self.fbo = None
+        self.texture = None
     
     def load(self, renderer):
         """Use your renderer's loader function to compile and link the shader"""
@@ -20,3 +22,9 @@ class ShaderPassData:
         
     def use_vbo(self, vbo):
         self.vbo = vbo
+        
+    def assign_fbo(self):
+        self.fbo = glGenFramebuffers(1)
+        
+    def assign_text(self):
+        self.texture = glGenTextures(1)

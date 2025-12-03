@@ -79,12 +79,17 @@ class GSGRenderSystem(QOpenGLWidget):
             # --- create VAO + VBO for your existing self.quad ---
             shader_pass.assign_vao()
             shader_pass.assign_vbo()
+            if shader_pass_type == ShaderPass.PASS_FINAL:
+                vertex_data = self.quad
+            else:
+                self.init_FBOs(width, height, shader_pass)
+                vertex_data = self.vertices
             
             glBindVertexArray(shader_pass.vao)
             glBindBuffer(GL_ARRAY_BUFFER, shader_pass.vbo)
-            glBufferData(GL_ARRAY_BUFFER, self.quad.nbytes, self.quad, GL_STATIC_DRAW)
+            glBufferData(GL_ARRAY_BUFFER, vertex_data.nbytes, vertex_data, GL_STATIC_DRAW)
             
-            stride = 4 * self.quad.itemsize
+            stride = 4 * vertex_data.itemsize
             
             # pos
             glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, ctypes.c_void_p(0))
@@ -165,8 +170,9 @@ class GSGRenderSystem(QOpenGLWidget):
     def update_assets(self , assets_to_load: dict):
         self.init_assets(assets_to_load=assets_to_load)
     
-    def init_FBOs(self , width , height):
-        pass
+    def init_FBOs(self , width , height, shader_pass):
+        shader_pass.assign_fbo()
+        
     
     def init_SSBOs(self):
         """
