@@ -103,7 +103,10 @@ class GSGRenderSystem(QOpenGLWidget):
     def paintGL(self):
         glClearColor(0.1, 0.1, 0.1, 1.0)
         glClear(GL_COLOR_BUFFER_BIT)
-        
+
+        self.final_pass()
+
+    def final_pass(self):
         shader_pass = self.shader_passes[ShaderPass.PASS_FINAL]
         
         glUseProgram(shader_pass.program)
