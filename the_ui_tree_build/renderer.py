@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QOpenGLWidget
 import numpy as np
 from OpenGL.GL import *
-from enum import Enum, auto
+from enum import Enum
 from widget_data import WidgetDataType
 from PIL import Image
 from event_system import event_system, EventQueue, EventTypeEnum
@@ -12,11 +12,10 @@ from PassSystem import ShaderPassData
 Image.MAX_IMAGE_PIXELS = None
 
 class ShaderPass(Enum):
-    PASS_MAP = auto()
-    PASS_BASIC = auto()
-    PASS_COMPLEX = auto()
-    PASS_TEXT = auto()
-    PASS_FINAL = auto()
+    PASS_MAP = 0
+    PASS_BASIC = 1
+    PASS_TEXT = 2
+    PASS_FINAL = 3
 
 
 class AssetDataType(Enum):
