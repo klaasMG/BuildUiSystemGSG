@@ -40,6 +40,7 @@ class GSGRenderSystem(QOpenGLWidget):
         self.assets_to_update = {}
         self.widget_max = self.GSG_gui_system.widget_max
         self.vertices = np.full((self.widget_max * 4) , 0.0 , dtype=np.float32)
+        self.vertices[0:12] = np.array([-1.0,  1.0, 0.0, 1.0, -1.0,  0.0, 0.0, 0.5,0.0,  1.0, 0.5, 1.0  ],dtype=np.float32)
         self.quad = np.array([-1.0, -1.0, 0.0, 0.0,1.0, -1.0, 1.0, 0.0,-1.0,  1.0, 0.0, 1.0,-1.0,  1.0, 0.0, 1.0,1.0, -1.0, 1.0, 0.0,1.0,  1.0, 1.0, 1.0,], dtype=np.float32)
         self.render_queue: EventQueue = event_system.add_queue("renderer")
         self.shader_passes: dict[ShaderPass, ShaderPassData] = {}
@@ -55,6 +56,8 @@ class GSGRenderSystem(QOpenGLWidget):
         event_data = (width, height)
         event = (priority, destination, event_type, event_data)
         self.render_queue.send_event(event)
+        for shader_pass in self.shader_passes.values():
+            self.init_FBOs(width, height, shader_pass)
     
     def initializeGL(self):
         width = self.width()
@@ -115,6 +118,9 @@ class GSGRenderSystem(QOpenGLWidget):
     def final_render_pass(self):
         shader_pass = self.shader_passes[ShaderPass.PASS_FINAL]
         
+        glBindFramebuffer(GL_FRAMEBUFFER, self.defaultFramebufferObject())
+        glViewport(0, 0, self.width(), self.height())
+        
         glUseProgram(shader_pass.program)
         glBindVertexArray(shader_pass.vao)
         glDrawArrays(GL_TRIANGLES, 0, 6)
@@ -123,8 +129,20 @@ class GSGRenderSystem(QOpenGLWidget):
     def basic_render_pass(self):
         shader_pass = self.shader_passes[ShaderPass.PASS_BASIC]
         
+        glBindFramebuffer(GL_FRAMEBUFFER, shader_pass.fbo)
+        glViewport(0, 0, self.width(), self.height())
+        
         glUseProgram(shader_pass.program)
         glBindVertexArray(shader_pass.vao)
+        
+        prev_pass_tex = self.shader_passes[ShaderPass.PASS_BASIC].texture
+        glActiveTexture(GL_TEXTURE0)
+        glBindTexture(GL_TEXTURE_2D, prev_pass_tex)
+        
+        # Tell the shader that 'sampler2D uPrevPass' is bound to unit 0
+        location = glGetUniformLocation(shader_pass.program, "uPrevPass")
+        glUniform1i(location, 0)
+        
         glDrawArrays(GL_TRIANGLES, 0, 6)
         glBindVertexArray(0)
         
