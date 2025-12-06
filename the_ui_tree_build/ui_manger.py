@@ -66,7 +66,7 @@ class GSGUiManager:
                                                   WidgetDataType.PARENT : (self.widget_max , np.int32)})
         self.widgets_by_id = {}
         self.free_ids = []
-        self.next_id = 1
+        self.next_id = 0
         self.GSG_renderer_system = None
         self.ui_manager_queue: EventQueue = event_system.add_queue("ui_manager")
         self.root = GSGWidget(0)
@@ -124,7 +124,7 @@ class GSGUiManager:
         col = data[6:10]
         for p , j in enumerate(pos):
             if j == -1:
-                pos[p] = self.widget_data[WidgetDataType.POSITION][i * 4 + p]
+                pos[p] = self.widget_data[WidgetDataType.POSITION][i * 6 + p]
         for p , j in enumerate(col):
             if j == -1:
                 col[p] = self.widget_data[WidgetDataType.COLOUR][i * 4 + p]

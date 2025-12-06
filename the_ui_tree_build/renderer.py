@@ -112,6 +112,10 @@ class GSGRenderSystem(QOpenGLWidget):
     def paintGL(self):
         glClearColor(0.1, 0.1, 0.1, 1.0)
         glClear(GL_COLOR_BUFFER_BIT)
+        
+        for data_enum in self.buffers.keys():
+            self.update_ssbo(data_enum)
+            
         self.basic_render_pass()
         self.final_render_pass()
         
