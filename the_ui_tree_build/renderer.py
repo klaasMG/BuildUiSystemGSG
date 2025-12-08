@@ -40,7 +40,6 @@ class GSGRenderSystem(QOpenGLWidget):
         self.assets_to_update = {}
         self.widget_max = self.GSG_gui_system.widget_max
         self.vertices = np.full((self.widget_max * 4) , 0.0 , dtype=np.float32)
-        self.vertices[0:12] = np.array([-1.0,  1.0, 0.0, 1.0, -1.0,  0.0, 0.0, 0.5,0.0,  1.0, 0.5, 1.0  ],dtype=np.float32)
         self.quad = np.array([-1.0, -1.0, 0.0, 0.0,1.0, -1.0, 1.0, 0.0,-1.0,  1.0, 0.0, 1.0,-1.0,  1.0, 0.0, 1.0,1.0, -1.0, 1.0, 0.0,1.0,  1.0, 1.0, 1.0,], dtype=np.float32)
         self.render_queue: EventQueue = event_system.add_queue("renderer")
         self.shader_passes: dict[ShaderPass, ShaderPassData] = {}
