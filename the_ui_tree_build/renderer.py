@@ -242,6 +242,9 @@ class GSGRenderSystem(QOpenGLWidget):
         def read_file(path):
             with open(path , "r") as f:
                 return f.read()
+            
+        def include_glsl():
+            pass
         
         # Compile a shader
         def compile_shader(source , shader_type):
