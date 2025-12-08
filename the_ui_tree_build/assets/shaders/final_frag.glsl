@@ -1,4 +1,4 @@
-#version 330 core
+#version 430 core
 in vec2 vUV;
 out vec4 FragColor;
 uniform sampler2D uPrevPass;
@@ -8,7 +8,7 @@ void main() {
 
     // if black, replace with blue
     if (prevColor.rgb == vec3(0.0)) {
-        prevColor.rgb = vec3(0.0, 0.6, 1.0);
+        prevColor.rgb = vec3(1.0, 0.6, 1.0);
     }
 
     FragColor = prevColor;
