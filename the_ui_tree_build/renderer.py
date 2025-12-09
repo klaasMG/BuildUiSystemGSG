@@ -103,6 +103,7 @@ class GSGRenderSystem(QOpenGLWidget):
             
             glBindBuffer(GL_ARRAY_BUFFER, 0)
             glBindVertexArray(0)
+        self.init_SSBOs()
         
     def init_data(self):
         for data in self.GSG_gui_system.widget_data:

@@ -6,3 +6,8 @@ struct Widget{
     int shape;
     int parent;
 };
+
+float pos_to_ndc(int size_any,int postion_any){
+    float vertex_position = 0.0;
+    return 1.0;
+}
