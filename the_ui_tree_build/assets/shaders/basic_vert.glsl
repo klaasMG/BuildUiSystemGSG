@@ -4,6 +4,8 @@ layout(location = 1) in vec2 aUV;
 
 out vec2 vUV;
 flat out int vIndex;
+flat out Widget widget;
+#include "C:/Users/klaas/PycharmProjects/BuildUiSystemGSG/the_ui_tree_build/assets/shaders/widget_builder.glsl"
 void main() {
     vIndex = gl_VertexID;
     vUV = aUV;

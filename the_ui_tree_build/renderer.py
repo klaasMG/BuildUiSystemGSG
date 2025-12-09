@@ -242,9 +242,30 @@ class GSGRenderSystem(QOpenGLWidget):
         def read_file(path):
             with open(path , "r") as f:
                 return f.read()
+        
+        
+        def include_glsl(path, seen=None):
+            if seen is None:
+                seen = set()
             
-        def include_glsl():
-            pass
+            # avoid including the same file twice
+            if path in seen:
+                return ""
+            seen.add(path)
+            
+            src = read_file(path)
+            final = ""
+            
+            for line in src.splitlines(True):  # keep newlines
+                stripped = line.strip()
+                if stripped.startswith("#include"):
+                    # get filename
+                    inc = stripped.split()[1].strip('"<>')
+                    final += include_glsl(inc, seen)
+                else:
+                    final += line
+            
+            return final
         
         # Compile a shader
         def compile_shader(source , shader_type):
@@ -259,8 +280,8 @@ class GSGRenderSystem(QOpenGLWidget):
             return shader
         
         # Read sources
-        vertex_src = read_file(vertex_path)
-        fragment_src = read_file(fragment_path)
+        vertex_src = include_glsl(vertex_path)
+        fragment_src = include_glsl(fragment_path)
         
         # Compile shaders
         vertex_shader = compile_shader(vertex_src , GL_VERTEX_SHADER)
