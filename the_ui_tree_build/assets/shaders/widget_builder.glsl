@@ -8,6 +8,6 @@ struct Widget{
 };
 
 float pos_to_ndc(int size_any,int postion_any){
-    float vertex_position = 0.0;
-    return 1.0;
+    float vertex_position = (postion_any / size_any) * 2.0 - 1.0;
+    return vertex_position;
 }
