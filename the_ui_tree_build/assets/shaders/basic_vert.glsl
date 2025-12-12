@@ -26,7 +26,7 @@ int get_position(int index,int offset){
 }
 void main() {
     vIndex = gl_VertexID;
-    Widget w = Widget(ivec3(1,1,1),ivec3(1,1,1),1,ivec4(1,1,1,1),2, 3);
+    Widget w = Widget(ivec3(get_position(vIndex,0),get_position(vIndex,1),get_position(vIndex,2)),ivec3(get_position(vIndex,3),get_position(vIndex,4),get_position(vIndex,5)),1,ivec4(1,1,1,1),2, 3);
     widget = w;
     vUV = aUV;
     gl_Position = vec4(aPos, 0.0, 1.0);
