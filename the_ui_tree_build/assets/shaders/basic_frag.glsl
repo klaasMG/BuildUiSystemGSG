@@ -9,12 +9,7 @@ layout(std430, binding = 0) buffer Position {
 };
 
 void main() {
-    vec3 colour = vec3(0,0,0);
-    if (widget_pos[6] != -1){
-        colour = vec3(1,0,1);
-    }
-    else{
-        colour = vec3(0,0,0);
-    }
-    FragColor = vec4(colour, 1.0);
+    ivec4 colour_255 = widget.colour;
+    vec4 colour = vec4(col_to_ndc(colour_255.x),col_to_ndc(colour_255.y),col_to_ndc(colour_255.z),col_to_ndc(colour_255.w));
+    FragColor = vec4(colour);
 }
