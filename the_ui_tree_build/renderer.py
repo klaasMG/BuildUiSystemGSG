@@ -72,6 +72,8 @@ class GSGRenderSystem(QOpenGLWidget):
         event = (priority , destination , event_type , event_data)
         self.render_queue.send_event(event)
         
+        glEnable(GL_PROGRAM_POINT_SIZE)
+        
         self.shader_passes[ShaderPass.PASS_BASIC] = ShaderPassData("assets/shaders/basic_frag.glsl", "assets/shaders/basic_vert.glsl")
         self.shader_passes[ShaderPass.PASS_FINAL] = ShaderPassData("assets/shaders/final_frag.glsl", "assets/shaders/final_vert.glsl")
         
@@ -147,7 +149,7 @@ class GSGRenderSystem(QOpenGLWidget):
         location = glGetUniformLocation(shader_pass.program, "uPrevPass")
         glUniform1i(location, 0)
         
-        glDrawArrays(GL_TRIANGLES, 0, 6)
+        glDrawArrays(GL_POINTS, 0, self.widget_max)
         glBindVertexArray(0)
         
     def update_ssbo(self, data_enum):
@@ -218,6 +220,9 @@ class GSGRenderSystem(QOpenGLWidget):
         Initializes SSBOs using the parent GSG_gui_system data.
         Each key in self.buffers comes from GSG_gui_system.widget_data.
         """
+        p:dict = {43:3,3:33}
+        i = p.items()
+        print(i)
         for data_enum, parent_array in self.GSG_gui_system.widget_data.items():
             # skip if already initialized
             if data_enum in self.buffers and self.buffers[data_enum] is not None:
@@ -283,6 +288,9 @@ class GSGRenderSystem(QOpenGLWidget):
         # Read sources
         vertex_src = include_glsl(vertex_path)
         fragment_src = include_glsl(fragment_path)
+        
+        print(vertex_src)
+        print(fragment_src)
         
         # Compile shaders
         vertex_shader = compile_shader(vertex_src , GL_VERTEX_SHADER)

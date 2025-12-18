@@ -81,7 +81,7 @@ class GSGUiManager:
         self.GSG_renderer_system.show()
         
         self.sqaure = GSGWidget(parent=self.root)
-        self.append_widget(self.sqaure, [4, 16, 1, 10, 10, 1, 255, 0, 0, 255, 2, -1, -1, -1, ])
+        self.append_widget(self.sqaure, [4, 6, 1, 10, 10, 1, 255, 0, 0, 255, 2, -1, -1, -1, ])
         
         self.frame_timer = QTimer()
         self.frame_timer.timeout.connect(self.update_ui_manager)
@@ -149,6 +149,10 @@ class GSGUiManager:
         self.widget_data[WidgetDataType.PARENT][i] = widget.parent.id if widget.parent else -1
         self.widget_data[WidgetDataType.TEXT_ID][i] = data[12]
         self.widget_data[WidgetDataType.ASSETS_ID][i] = data[13]
+        for i in self.widget_data:
+            with open(f"file_with_stuff_{i}","w") as file:
+                for key, value in enumerate(self.widget_data[i]):
+                    file.write(f"{key}: ({value})\n")
     
     def clear_widget_data(self , wid):
         default = -1

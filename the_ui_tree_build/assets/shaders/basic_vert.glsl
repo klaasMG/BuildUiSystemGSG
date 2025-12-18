@@ -29,5 +29,7 @@ void main() {
     Widget w = Widget(ivec3(get_position(vIndex,0),get_position(vIndex,1),get_position(vIndex,2)),ivec3(get_position(vIndex,3),get_position(vIndex,4),get_position(vIndex,5)),1,ivec4(1,1,1,255),2, 3);
     widget = w;
     vUV = aUV;
-    gl_Position = vec4(pos_to_ndc(640,w.pos_one.x),pos_to_ndc(480,w.pos_one.y), 0.0, 1.0);
+    //gl_Position = vec4(pos_to_ndc(640,w.pos_one.x),pos_to_ndc(480,w.pos_one.y), 0.0, 1.0);
+    gl_Position = vec4(0,0,0,0);
+    gl_PointSize = 50.0;
 }
