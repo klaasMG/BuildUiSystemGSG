@@ -18,7 +18,7 @@ layout(std430, binding = 8) buffer Parent {
 int get_position(int index,int offset){
     int position = widget_pos[index * 6 + offset];
     int parent = widget_parent[index];
-    while (parent != 0){
+    while (parent > 0){
         position += widget_pos[parent * 6 + offset];
         parent = widget_parent[parent];
     }
@@ -26,10 +26,14 @@ int get_position(int index,int offset){
 }
 void main() {
     vIndex = gl_VertexID;
-    Widget w = Widget(ivec3(get_position(vIndex,0),get_position(vIndex,1),get_position(vIndex,2)),ivec3(get_position(vIndex,3),get_position(vIndex,4),get_position(vIndex,5)),1,ivec4(1,1,1,255),2, 3);
+    Widget w = Widget(ivec3(get_position(vIndex,0),get_position(vIndex,1),get_position(vIndex,2)),ivec3(get_position(vIndex,3),get_position(vIndex,4),get_position(vIndex,5)),1,ivec4(255,1,1,255),2, widget_parent[vIndex]);
     widget = w;
     vUV = aUV;
-    //gl_Position = vec4(pos_to_ndc(640,w.pos_one.x),pos_to_ndc(480,w.pos_one.y), 0.0, 1.0);
-    gl_Position = vec4(0,0,0,0);
+    vec4 Position = vec4(pos_to_ndc(640,w.pos_one.x),pos_to_ndc(480,w.pos_one.y), 0.0, 1.0);
+    if (w.pos_one.x == -1){
+        Position = vec4(0);
+    }
+    gl_Position = Position;
+    //gl_Position = vec4(0,0,0,1);
     gl_PointSize = 50.0;
 }

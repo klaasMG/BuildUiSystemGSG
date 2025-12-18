@@ -39,7 +39,7 @@ class GSGRenderSystem(QOpenGLWidget):
         self.buffers: dict[int,WidgetDataType] = {}  # name -> buffer id
         self.assets_to_update = {}
         self.widget_max = self.GSG_gui_system.widget_max
-        self.vertices = np.full((self.widget_max * 4) , 0.0 , dtype=np.float32)
+        self.vertices = np.full((self.widget_max * 4) , 3.0 , dtype=np.float32)
         self.quad = np.array([-1.0, -1.0, 0.0, 0.0,1.0, -1.0, 1.0, 0.0,-1.0,  1.0, 0.0, 1.0,-1.0,  1.0, 0.0, 1.0,1.0, -1.0, 1.0, 0.0,1.0,  1.0, 1.0, 1.0,], dtype=np.float32)
         self.render_queue: EventQueue = event_system.add_queue("renderer")
         self.shader_passes: dict[ShaderPass, ShaderPassData] = {}
@@ -157,7 +157,7 @@ class GSGRenderSystem(QOpenGLWidget):
         if not buffer_id:
             return
         
-        array = np.array(self.GSG_gui_system.widget_data[data_enum], dtype=np.float32)
+        array = np.array(self.GSG_gui_system.widget_data[data_enum], dtype=np.int32)
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer_id)
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, array.nbytes, array)
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
@@ -232,7 +232,7 @@ class GSGRenderSystem(QOpenGLWidget):
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer_id)
             
             # Ensure it's a contiguous float32 numpy array
-            array = np.array(parent_array, dtype=np.float32)
+            array = np.array(parent_array, dtype=np.int32)
             glBufferData(GL_SHADER_STORAGE_BUFFER, array.nbytes, array, GL_DYNAMIC_DRAW)
             
             # Optional: binding point = enum value

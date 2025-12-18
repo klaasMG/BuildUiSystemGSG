@@ -8,11 +8,11 @@ struct Widget{
 };
 
 float pos_to_ndc(int size_any,int postion_any){
-    float vertex_position = (postion_any / size_any) * 2.0 - 1.0;
+    float vertex_position = (float(postion_any) / float(size_any)) * 2.0 - 1.0;
     return vertex_position;
 }
 
 float col_to_ndc(int col_any){
-    float colour_ndc = col_any / 255.0;
+    float colour_ndc = float(col_any) / 255.0;
     return colour_ndc;
 }
