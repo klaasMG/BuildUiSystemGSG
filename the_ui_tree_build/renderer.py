@@ -289,9 +289,6 @@ class GSGRenderSystem(QOpenGLWidget):
         vertex_src = include_glsl(vertex_path)
         fragment_src = include_glsl(fragment_path)
         
-        print(vertex_src)
-        print(fragment_src)
-        
         # Compile shaders
         vertex_shader = compile_shader(vertex_src , GL_VERTEX_SHADER)
         fragment_shader = compile_shader(fragment_src , GL_FRAGMENT_SHADER)
