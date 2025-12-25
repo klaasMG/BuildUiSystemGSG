@@ -9,6 +9,22 @@ class DebugData(Enum):
     Create = "create"
     SetDebug = "set_debug"
     Exit = "exit"
+    
+def get_debug_route(cmd_list):
+    if len(cmd_list) > 2:
+        return cmd_list[2]
+    else:
+        folder = Path(__file__).parent
+        return str(folder)
+    
+def build_debug_tree(debug_root):
+    file_data = {}
+    for p in Path(debug_root).iterdir():
+        if p.is_file():
+            file_data[p.name] = [{},None]
+        elif p.is_dir():
+            file_data[p.name] = [{},build_debug_tree(p)]
+    return file_data
 
 def repl():
     running = True
@@ -30,6 +46,8 @@ def repl():
         
         if first_cmd == DebugData.Create.value:
             debug_config = cmd_list[1]
+            debug_root = get_debug_route(cmd_list)
+            debug_tree = build_debug_tree(debug_root)
             DEBUG_FILE = parent_directory / Path(f"{debug_config}.json")
             data = {DebugData.DebugEnabled.value: False}
             with open(DEBUG_FILE, "w") as f:
