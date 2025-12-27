@@ -6,6 +6,7 @@ parent_directory = Path(__file__).resolve().parent
 
 class DebugData(Enum):
     DebugEnabled = "debug_enabled"
+    DebugFileTree = "debug_tree"
     Create = "create"
     SetDebug = "set_debug"
     Exit = "exit"
@@ -49,7 +50,7 @@ def repl():
             debug_root = get_debug_route(cmd_list)
             debug_tree = build_debug_tree(debug_root)
             DEBUG_FILE = parent_directory / Path(f"{debug_config}.json")
-            data = {DebugData.DebugEnabled.value: False}
+            data = {DebugData.DebugEnabled.value: False, DebugData.DebugFileTree.value: debug_tree}
             with open(DEBUG_FILE, "w") as f:
                 json.dump(data, f, indent=4)
             
