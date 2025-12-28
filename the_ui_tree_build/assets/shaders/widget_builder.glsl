@@ -12,7 +12,7 @@ float pos_to_ndc(int size_any,int postion_any){
     return vertex_position;
 }
 
-float pos_to_ndc(float size_any,int postion_any){
+float pos_to_ndc(int size_any,float postion_any){
     float vertex_position = (float(postion_any) / size_any) * 2.0 - 1.0;
     return vertex_position;
 }

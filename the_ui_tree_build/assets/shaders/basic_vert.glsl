@@ -29,7 +29,7 @@ void main() {
     Widget w = Widget(ivec3(get_position(vIndex,0),get_position(vIndex,1),get_position(vIndex,2)),ivec3(get_position(vIndex,3),get_position(vIndex,4),get_position(vIndex,5)),1,ivec4(255,1,1,255),2, widget_parent[vIndex]);
     widget = w;
     vUV = aUV;
-    vec4 Position = vec4(pos_to_ndc(640,w.pos_one.x),pos_to_ndc(480,w.pos_one.y), 0.0, 1.0);
+    vec4 Position = vec4(pos_to_ndc(640,center_pos(w.pos_one.x, w.pos_two.x)),pos_to_ndc(480,center_pos(w.pos_one.y, w.pos_two.y)), 0.0, 1.0);
     if (w.pos_one.x == -1){
         Position = vec4(0);
     }
