@@ -32,10 +32,13 @@ class GSGRenderSystem(QOpenGLWidget):
         self.fullscreen_vao = None
         self.fullscreen_vbo = None
         self.GSG_gui_system = GSG_gui_system
-        self.assets = []
-        self.text = []
-        self.text_set = set()
-        self.asset_path = set()
+        self.assets = self.GSG_gui_system.assets
+        self.text = self.GSG_gui_system.text
+        self.text_set = self.GSG_gui_system.text_set
+        self.asset_path = self.GSG_gui_system.asset_path
+        self.asset_ids = self.GSG_gui_system.asset_ids
+        self.text_ids = self.GSG_gui_system.text_ids
+        self.open_assets = set()
         self.buffers: dict[int,WidgetDataType] = {}  # name -> buffer id
         self.assets_to_update = {}
         self.widget_max = self.GSG_gui_system.widget_max
@@ -173,26 +176,28 @@ class GSGRenderSystem(QOpenGLWidget):
     def init_geometry(self):
         pass
     
-    def init_assets(self , assets_to_load: dict):
-        for asset_type , (path_or_data , widget) in assets_to_load.items():
-            if asset_type == AssetDataType.TEXT:
-                if path_or_data not in self.text_set:
-                    self.text_set.add(path_or_data)
-                    self.text.append(path_or_data)
-            if path_or_data not in self.asset_path:
-                self.asset_path.add(path_or_data)
-                if asset_type == AssetDataType.BINARY_ASSET:
-                    file = open(path_or_data , "r+b")
-                elif asset_type == AssetDataType.TEXT_ASSET:
-                    file = open(path_or_data , "r+")
-                elif asset_type == AssetDataType.IMAGE_ASSET:
-                    file = Image.open(path_or_data).convert("RGBA")
+    def init_assets(self):
+        for asset in self.assets:
+            if asset not in self.open_assets:
+                if self.file_type(asset) == "text":
+                    file = open(asset,"r")
+                elif self.file_type(asset) == "image":
+                    file = open(asset, "r+b")
+                elif self.file_type(asset) == "binary":
+                    file = Image.open(asset)
                 else:
                     file = "broken"
-                self.assets.append(file)
+                self.open_assets.add(asset)
+                asset_id = self.asset_ids[asset]
+                if len(self.assets) - 1 < asset_id:
+                    over_shoot = asset_id - len(self.assets) + 1
+                    while over_shoot > 0:
+                        self.assets.append(None)
+                        over_shoot -= 1
+                self.assets[asset_id] = file
     
-    def update_assets(self , assets_to_load: dict):
-        self.init_assets(assets_to_load=assets_to_load)
+    def update_assets(self):
+        self.init_assets()
     
     def init_FBOs(self , width , height, shader_pass):
         shader_pass.assign_fbo()
@@ -310,6 +315,31 @@ class GSGRenderSystem(QOpenGLWidget):
         glDeleteShader(fragment_shader)
         
         return program
+    
+    def file_type(self, path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                f.read(1)
+            return "text"
+        except:
+            pass
+        
+        try:
+            Image.open(path)
+            return "image"
+        except:
+            pass
+        
+        return "binary"
+    
+    def render_update(self):
+        self.assets = self.GSG_gui_system.assets
+        self.text = self.GSG_gui_system.text
+        self.text_set = self.GSG_gui_system.text_set
+        self.asset_path = self.GSG_gui_system.asset_path
+        self.asset_ids = self.GSG_gui_system.asset_ids
+        self.text_ids = self.GSG_gui_system.text_ids
+        self.update()
 
 
 if __name__ == "__main__":

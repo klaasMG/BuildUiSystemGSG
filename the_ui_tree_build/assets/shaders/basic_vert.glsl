@@ -11,6 +11,18 @@ layout(std430, binding = 0) buffer Position {
     int widget_pos[];
 };
 
+layout(std430, binding = 1) buffer ShaderPass {
+    int widget_shaderpass[];
+};
+
+layout(std430, binding = 2) buffer Colour {
+    int widget_colour[];
+};
+
+layout(std430, binding = 3) buffer Shape{
+    int widget_shape[];
+};
+
 layout(std430, binding = 8) buffer Parent {
     int widget_parent[];
 };
@@ -25,9 +37,13 @@ int get_position(int index,int offset){
     return position;
 }
 
+ivec4 get_colour(int index){
+    return ivec4(widget_colour[index * 4],widget_colour[index * 4 + 1],widget_colour[index * 4 + 2],widget_colour[index * 4 + 3]);
+}
 void main() {
     vIndex = gl_VertexID;
-    Widget w = Widget(ivec3(get_position(vIndex,0),get_position(vIndex,1),get_position(vIndex,2)),ivec3(get_position(vIndex,3),get_position(vIndex,4),get_position(vIndex,5)),1,ivec4(255,1,1,255),2, widget_parent[vIndex]);
+    Widget w = Widget(ivec3(get_position(vIndex,0),get_position(vIndex,1),get_position(vIndex,2)),ivec3(get_position(vIndex,3),get_position(vIndex,4),get_position(vIndex,5)),
+                      widget_shaderpass[vIndex],get_colour(vIndex),widget_shape[vIndex], widget_parent[vIndex]);
     widget = w;
     vUV = aUV;
     vec4 Position = vec4(pos_to_ndc(640,center_pos(w.pos_one.x, w.pos_two.x)),pos_to_ndc(480,center_pos(w.pos_one.y, w.pos_two.y)), 0.0, 1.0);

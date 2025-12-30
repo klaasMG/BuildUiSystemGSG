@@ -71,6 +71,14 @@ class GSGUiManager:
         self.next_id = 0
         self.GSG_renderer_system = None
         self.ui_manager_queue: EventQueue = event_system.add_queue("ui_manager")
+        self.assets = []
+        self.text = []
+        self.text_ids = {}
+        self.asset_ids = {}
+        self.next_text_id = 0
+        self.next_asset_id = 0
+        self.text_set = set()
+        self.asset_path = set()
         self.root = GSGWidget(0)
         self.append_widget(self.root,data=None)
         self.width = 0
@@ -83,7 +91,8 @@ class GSGUiManager:
         self.GSG_renderer_system.show()
         
         self.sqaure = GSGWidget(parent=self.root)
-        self.append_widget(self.sqaure, [320, 200, 1, 390, 400, 1, 255, 0, 255, 255, 2, -1, -1, -1, ])
+        path_or_data = "assets/images/image.jpg"
+        self.append_widget(self.sqaure, [320, 200, 1, 390, 400, 1, 255, 255, 255, 255, 2, -1,path_or_data,"asset"])
         
         self.frame_timer = QTimer()
         self.frame_timer.timeout.connect(self.update_ui_manager)
@@ -94,7 +103,7 @@ class GSGUiManager:
     def update_ui_manager(self):
         event = self.ui_manager_queue.receive_event()
         self.update_widgets()
-        self.GSG_renderer_system.update()
+        self.GSG_renderer_system.render_update()
         
     def use_event(self, event):
         event_type, data = event
@@ -135,8 +144,14 @@ class GSGUiManager:
         self.widget_data[WidgetDataType.SHADER_PASS][i] = data[10] if data[10] != -1 else self.widget_data[WidgetDataType.SHADER_PASS][i]
         self.widget_data[WidgetDataType.SHAPE][i] = data[11] if data[11] != -1 else self.widget_data[WidgetDataType.SHAPE][i]
         self.widget_data[WidgetDataType.PARENT][i] = widget.parent.id if widget.parent else self.widget_data[WidgetDataType.PARENT][i]
-        self.widget_data[WidgetDataType.TEXT_ID][i] = data[12] if data[12] != -1 else self.widget_data[WidgetDataType.TEXT_ID][i]
-        self.widget_data[WidgetDataType.ASSETS_ID][i] = data[13] if data[13] != -1 else self.widget_data[WidgetDataType.ASSETS_ID][i]
+        if data[13] == "text":
+            self.widget_data[WidgetDataType.TEXT_ID][i] = self.next_text_id
+            self.asset_ids[data[12]] = self.next_text_id
+            self.next_text_id += 1
+        elif data[13] == "asset":
+            self.widget_data[WidgetDataType.ASSETS_ID][i] = self.next_asset_id
+            self.asset_ids[data[12]] = self.next_asset_id
+            self.next_text_id += 1
     
     def set_widget_defaults(self , widget , data=None):
         if not data or len(data) != 14:
@@ -149,8 +164,14 @@ class GSGUiManager:
         self.widget_data[WidgetDataType.SHADER_PASS][i] = data[10]
         self.widget_data[WidgetDataType.SHAPE][i] = data[11]
         self.widget_data[WidgetDataType.PARENT][i] = widget.parent.id if widget.parent else -1
-        self.widget_data[WidgetDataType.TEXT_ID][i] = data[12]
-        self.widget_data[WidgetDataType.ASSETS_ID][i] = data[13]
+        if data[13] == "text":
+            self.widget_data[WidgetDataType.TEXT_ID][i] = self.next_text_id
+            self.asset_ids[data[12]] = self.next_text_id
+            self.next_text_id += 1
+        elif data[13] == "asset":
+            self.widget_data[WidgetDataType.ASSETS_ID][i] = self.next_asset_id
+            self.asset_ids[data[12]] = self.next_asset_id
+            self.next_text_id += 1
     
     def clear_widget_data(self , wid):
         default = -1
@@ -167,6 +188,13 @@ class GSGUiManager:
         for key , (size , dtype) in widget_data_types.items():
             arr = np.full(size , -1 , dtype=dtype)
             self.widget_data[key] = arr
+            
+    def add_text(self,text):
+        self.text_set.add(text)
+        self.text.append(text)
+        
+    def add_asset(self,path):
+        self.asset_path.add(path)
     
     def remove_widget_subtree(self , root_widget):
         stack = [root_widget]
