@@ -24,6 +24,7 @@ int get_position(int index,int offset){
     }
     return position;
 }
+
 void main() {
     vIndex = gl_VertexID;
     Widget w = Widget(ivec3(get_position(vIndex,0),get_position(vIndex,1),get_position(vIndex,2)),ivec3(get_position(vIndex,3),get_position(vIndex,4),get_position(vIndex,5)),1,ivec4(255,1,1,255),2, widget_parent[vIndex]);
@@ -35,5 +36,8 @@ void main() {
     }
     gl_Position = Position;
     //gl_Position = vec4(0,0,0,1);
-    gl_PointSize = 50.0;
+    int x_lenght = get_length(w.pos_one.x, w.pos_one.y);
+    int y_lenght = get_length(w.pos_two.x, w.pos_two.y);
+    int point_size = max(x_lenght,y_lenght);
+    gl_PointSize = float(point_size);
 }

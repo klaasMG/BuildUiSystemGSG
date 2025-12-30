@@ -27,3 +27,7 @@ float center_pos(int coord_one, int coord_two){
     float average_coord = double_coord / 2.0f;
     return average_coord;
 }
+
+int get_length(int x_one,int x_two){
+    return abs(x_two - x_one);
+}
