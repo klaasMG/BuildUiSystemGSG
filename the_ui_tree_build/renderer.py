@@ -38,6 +38,7 @@ class GSGRenderSystem(QOpenGLWidget):
         self.asset_path = self.GSG_gui_system.asset_path
         self.asset_ids = self.GSG_gui_system.asset_ids
         self.text_ids = self.GSG_gui_system.text_ids
+        self.texture_atlas = Image.open("assets/image_atlases/atlas.png")
         self.open_assets = set()
         self.buffers: dict[int,WidgetDataType] = {}  # name -> buffer id
         self.assets_to_update = {}
@@ -115,6 +116,19 @@ class GSGRenderSystem(QOpenGLWidget):
             self.buffers[data] = self.GSG_gui_system.widget_data[data]
     
     def paintGL(self):
+        texture_atlas_tex = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, texture_atlas_tex)
+        
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+        
+        width, height = self.texture_atlas.size
+        pixel_bytes = self.texture_atlas.tobytes()
+        
+        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8, width, height,0,GL_RGBA,  GL_UNSIGNED_BYTE,pixel_bytes)
+        
         glClearColor(0.1, 0.1, 0.1, 1.0)
         glClear(GL_COLOR_BUFFER_BIT)
         
@@ -179,16 +193,17 @@ class GSGRenderSystem(QOpenGLWidget):
     def init_assets(self):
         for asset in self.assets:
             if asset not in self.open_assets:
+                asset_id = self.asset_ids[asset]
                 if self.file_type(asset) == "text":
                     file = open(asset,"r")
-                elif self.file_type(asset) == "image":
-                    file = open(asset, "r+b")
                 elif self.file_type(asset) == "binary":
+                    file = open(asset, "r+b")
+                elif self.file_type(asset) == "image":
                     file = Image.open(asset)
+                    self.texture_atlas.paste(file,(asset_id * 256 - 1,asset_id * 256 - 1),file)
                 else:
                     file = "broken"
                 self.open_assets.add(asset)
-                asset_id = self.asset_ids[asset]
                 if len(self.assets) - 1 < asset_id:
                     over_shoot = asset_id - len(self.assets) + 1
                     while over_shoot > 0:

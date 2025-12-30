@@ -5,6 +5,8 @@ struct Widget{
     ivec4 colour;
     int shape;
     int parent;
+    int asset_id;
+    int text_id;
 };
 
 float pos_to_ndc(int size_any,int postion_any){
