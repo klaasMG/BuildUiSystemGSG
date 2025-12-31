@@ -8,7 +8,7 @@ from event_system import event_system, EventQueue, EventTypeEnum
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTimer
 import sys
-from PassSystem import ShaderPassData
+from PassSystem import ShaderPassData, Texture
 Image.MAX_IMAGE_PIXELS = None
 
 class ShaderPass(Enum):
@@ -39,6 +39,7 @@ class GSGRenderSystem(QOpenGLWidget):
         self.asset_ids = self.GSG_gui_system.asset_ids
         self.text_ids = self.GSG_gui_system.text_ids
         self.texture_atlas = Image.open("assets/image_atlases/atlas.png")
+        self.atlas_texture:Texture | None = None
         self.open_assets = set()
         self.buffers: dict[int,WidgetDataType] = {}  # name -> buffer id
         self.assets_to_update = {}
@@ -109,6 +110,12 @@ class GSGRenderSystem(QOpenGLWidget):
             
             glBindBuffer(GL_ARRAY_BUFFER, 0)
             glBindVertexArray(0)
+            
+        self.atlas_texture = Texture(self.texture_atlas)
+        self.atlas_texture.bind_texture(0)
+        self.atlas_texture.set_data()
+        self.atlas_texture.send_texture()
+        
         self.init_SSBOs()
         
     def init_data(self):
@@ -116,18 +123,8 @@ class GSGRenderSystem(QOpenGLWidget):
             self.buffers[data] = self.GSG_gui_system.widget_data[data]
     
     def paintGL(self):
-        texture_atlas_tex = glGenTextures(1)
-        glBindTexture(GL_TEXTURE_2D, texture_atlas_tex)
         
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
-        
-        width, height = self.texture_atlas.size
-        pixel_bytes = self.texture_atlas.tobytes()
-        
-        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8, width, height,0,GL_RGBA,  GL_UNSIGNED_BYTE,pixel_bytes)
+        self.atlas_texture.resend(self.texture_atlas)
         
         glClearColor(0.1, 0.1, 0.1, 1.0)
         glClear(GL_COLOR_BUFFER_BIT)
@@ -156,6 +153,7 @@ class GSGRenderSystem(QOpenGLWidget):
         glViewport(0, 0, self.width(), self.height())
         
         glUseProgram(shader_pass.program)
+        shader_pass.set_atlas()
         glBindVertexArray(shader_pass.vao)
         
         prev_pass_tex = self.shader_passes[ShaderPass.PASS_BASIC].texture

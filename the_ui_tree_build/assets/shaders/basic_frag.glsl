@@ -1,10 +1,13 @@
 #version 430 core
 #include "C:/Users/klaas/PycharmProjects/BuildUiSystemGSG/the_ui_tree_build/assets/shaders/widget_builder.glsl"
 
+uniform sampler2D uAtlas;
+
 in vec2 vUV;
 flat in int vIndex;
 out vec4 FragColor;
 flat in Widget widget;
+
 
 layout(std430, binding = 0) buffer Position {
     int widget_pos[];

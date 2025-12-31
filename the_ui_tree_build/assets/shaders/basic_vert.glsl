@@ -23,6 +23,14 @@ layout(std430, binding = 3) buffer Shape{
     int widget_shape[];
 };
 
+layout(std430, binding = 4) buffer AssetId {
+    int widget_assetid[];
+};
+
+layout(std430, binding = 5) buffer TextId {
+    int widget_textif[];
+};
+
 layout(std430, binding = 8) buffer Parent {
     int widget_parent[];
 };
