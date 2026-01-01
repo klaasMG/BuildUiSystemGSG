@@ -92,7 +92,7 @@ class GSGUiManager:
         
         self.sqaure = GSGWidget(parent=self.root)
         path_or_data = "assets/images/image.jpg"
-        self.append_widget(self.sqaure, [320, 200, 1, 390, 400, 1, 255, 255, 255, 255, 2, -1,path_or_data,"asset"])
+        self.append_widget(self.sqaure, [320, 200, 1, 390, 400, 1, 255, 255, 255, 255, 2, -1,None,None])
         
         self.frame_timer = QTimer()
         self.frame_timer.timeout.connect(self.update_ui_manager)
