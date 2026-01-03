@@ -1,7 +1,7 @@
 from PIL import Image
 
 w, h = 100, 100
-img = Image.new("RGB", (w, h))
+img = Image.new("RGBA", (w, h))
 px = img.load()
 
 for y in range(h):

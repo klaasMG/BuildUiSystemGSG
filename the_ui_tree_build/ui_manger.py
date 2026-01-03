@@ -92,7 +92,7 @@ class GSGUiManager:
         
         self.sqaure = GSGWidget(parent=self.root)
         path_or_data = "assets/images/pattern.png"
-        self.append_widget(self.sqaure, [100, 100, 1, 200, 200, 1, 255, 255, 255, 255, 2, -1,path_or_data,"asset"])
+        self.append_widget(self.sqaure, [320, 200, 1, 420, 300, 1, 255, 255, 255, 255, 2, -1,path_or_data,"asset"])
         
         self.frame_timer = QTimer()
         self.frame_timer.timeout.connect(self.update_ui_manager)
@@ -151,7 +151,7 @@ class GSGUiManager:
         elif data[13] == "asset":
             self.widget_data[WidgetDataType.ASSETS_ID][i] = self.next_asset_id
             self.asset_ids[data[12]] = self.next_asset_id
-            self.next_text_id += 1
+            self.next_asset_id += 1
     
     def set_widget_defaults(self , widget , data=None):
         if not data or len(data) != 14:

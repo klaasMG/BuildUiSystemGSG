@@ -18,6 +18,8 @@ void main() {
     ivec4 colour_255 = widget.colour;
     vec4 colour = vec4(0);
     vec2 FragPos = gl_FragCoord.xy;
+    int pixel_pos_x = 0;
+    int pixel_pos_y = 0;
     if (widget.asset_id == -1){
         colour = vec4(
         col_to_ndc(colour_255.x),
@@ -28,12 +30,13 @@ void main() {
     else {
         ivec2 FragPosInt = ivec2(int(FragPos.x),int(FragPos.y));
         int asset_id = widget.asset_id;
-        int pixel_x = widget.pos_one.x - FragPosInt.x;
-        int pixel_y = widget.pos_one.y - FragPosInt.y;
-        int pixel_pos_x = 256 * asset_id + pixel_x;
+        int pixel_x = FragPosInt.x - widget.pos_one.x;
+        int pixel_y = FragPosInt.y - widget.pos_one.y;
+        pixel_pos_x = 256 * asset_id + pixel_x;
         int image_row = asset_id / 32;
         pixel_pos_x = pixel_pos_x - (image_row * 256);
-        int pixel_pos_y = pixel_y;
+        pixel_pos_y = pixel_y;
+        pixel_pos_y = 8191 - pixel_pos_y;
         ivec2 pixel = ivec2(pixel_pos_x,pixel_pos_y);
         colour = texelFetch(uAtlas, pixel, 0);
     }

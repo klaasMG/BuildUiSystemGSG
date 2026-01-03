@@ -112,9 +112,6 @@ class GSGRenderSystem(QOpenGLWidget):
             glBindVertexArray(0)
             
         self.atlas_texture = Texture(self.texture_atlas)
-        self.atlas_texture.bind_texture(0)
-        self.atlas_texture.set_data()
-        self.atlas_texture.send_texture()
         
         self.init_SSBOs()
         
@@ -123,7 +120,7 @@ class GSGRenderSystem(QOpenGLWidget):
             self.buffers[data] = self.GSG_gui_system.widget_data[data]
     
     def paintGL(self):
-        
+        self.update_assets()
         self.atlas_texture.resend(self.texture_atlas)
         
         glClearColor(0.1, 0.1, 0.1, 1.0)
@@ -189,16 +186,24 @@ class GSGRenderSystem(QOpenGLWidget):
         pass
     
     def init_assets(self):
-        for asset in self.assets:
-            if asset not in self.open_assets:
+        for asset in self.asset_ids:
+            if asset not in self.open_assets:#correct asset found
                 asset_id = self.asset_ids[asset]
                 if self.file_type(asset) == "text":
                     file = open(asset,"r")
                 elif self.file_type(asset) == "binary":
                     file = open(asset, "r+b")
-                elif self.file_type(asset) == "image":
-                    file = Image.open(asset)
-                    self.texture_atlas.paste(file,(asset_id * 256 - 1,asset_id * 256 - 1),file)
+                elif self.file_type(asset) == "image":#finds file type image
+                    file = Image.open(asset).convert("RGBA")
+                    print(file)
+                    assets_per_row = 32
+                    tile_size = 256
+                    col = asset_id % assets_per_row
+                    row = asset_id // assets_per_row
+                    paste_x = col * tile_size
+                    paste_y = row * tile_size
+                    self.texture_atlas.paste(file, (paste_x, paste_y), file)
+                    self.texture_atlas.save("hy.png", format="PNG")
                 else:
                     file = "broken"
                 self.open_assets.add(asset)
