@@ -36,7 +36,7 @@ void main() {
         int image_row = asset_id / 32;
         pixel_pos_x = pixel_pos_x - (image_row * 256);
         pixel_pos_y = pixel_y;
-        pixel_pos_y = 8191 - pixel_pos_y;
+        pixel_pos_y = pixel_pos_y;
         ivec2 pixel = ivec2(pixel_pos_x,pixel_pos_y);
         colour = texelFetch(uAtlas, pixel, 0);
     }
