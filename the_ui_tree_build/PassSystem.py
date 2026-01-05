@@ -9,6 +9,7 @@ class ShaderPassData:
         self.vao = None
         self.fbo = None
         self.texture = None
+        self.texture2 = None
     
     def load(self, renderer):
         """Use your renderer's loader function to compile and link the shader"""
@@ -29,13 +30,15 @@ class ShaderPassData:
     def assign_text(self):
         self.texture = glGenTextures(1)
         
+    def assign_info_map(self):
+        self.texture2 = glGenTextures(1)
+        
     def set_uniform(self, name, reference):
         loc = glGetUniformLocation(self.program, name)
-        print(loc)
         glUniform1i(loc, reference)
         
     def set_atlas(self):
-        self.set_uniform("uAtlas", 1)
+        self.set_uniform("uAtlas", 2)
     
 
 class Texture:
@@ -46,7 +49,7 @@ class Texture:
         self.upload(image)
 
     def bind_texture(self, unit=0):
-        glActiveTexture(GL_TEXTURE0 + unit + 1)
+        glActiveTexture(GL_TEXTURE0 + unit + 2)
         glBindTexture(GL_TEXTURE_2D, self.texture)
 
     def set_data(self):

@@ -1,3 +1,5 @@
+import time
+
 from PyQt5.QtWidgets import QOpenGLWidget
 import numpy as np
 from OpenGL.GL import *
@@ -31,6 +33,7 @@ class GSGRenderSystem(QOpenGLWidget):
         super().__init__()
         self.fullscreen_vao = None
         self.fullscreen_vbo = None
+        self.time = time.time()
         self.GSG_gui_system = GSG_gui_system
         self.assets = self.GSG_gui_system.assets
         self.text = self.GSG_gui_system.text
@@ -120,6 +123,10 @@ class GSGRenderSystem(QOpenGLWidget):
             self.buffers[data] = self.GSG_gui_system.widget_data[data]
     
     def paintGL(self):
+        new_time = time.time()
+        time_since = self.time - new_time
+        self.time = new_time
+        print(f"frame-time: {time_since}")
         self.update_assets()
         self.atlas_texture.resend(self.texture_atlas)
         
@@ -222,6 +229,7 @@ class GSGRenderSystem(QOpenGLWidget):
         glBindFramebuffer(GL_FRAMEBUFFER, shader_pass.fbo)
         
         shader_pass.assign_text()
+        shader_pass.assign_info_map()
         glBindTexture(GL_TEXTURE_2D, shader_pass.texture)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
                      GL_RGBA, GL_UNSIGNED_BYTE, None)
@@ -245,7 +253,7 @@ class GSGRenderSystem(QOpenGLWidget):
         """
         p:dict = {43:3,3:33}
         i = p.items()
-        print(i)
+        print(f"{i}")
         for data_enum, parent_array in self.GSG_gui_system.widget_data.items():
             # skip if already initialized
             if data_enum in self.buffers and self.buffers[data_enum] is not None:
