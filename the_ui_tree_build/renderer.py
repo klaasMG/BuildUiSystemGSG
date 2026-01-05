@@ -71,6 +71,7 @@ class GSGRenderSystem(QOpenGLWidget):
             self.init_FBOs(width, height, shader_pass)
     
     def initializeGL(self):
+        time_start = time.time()
         width = self.width()
         height = self.height()
         priority = 0
@@ -123,6 +124,8 @@ class GSGRenderSystem(QOpenGLWidget):
         self.atlas_texture = Texture(self.texture_atlas)
         
         self.init_SSBOs()
+        time_finish = time_start - time.time()
+        print(time_finish)
     
     def init_data(self):
         for data in self.GSG_gui_system.widget_data:

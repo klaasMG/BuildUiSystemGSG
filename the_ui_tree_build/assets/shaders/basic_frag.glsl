@@ -8,8 +8,6 @@ flat in int vIndex;
 out vec4 FragColor;
 flat in Widget widget;
 
-layout(location = 1) out vec4 InfoMap;  // second MRT target
-
 layout(std430, binding = 0) buffer Position {
     int widget_pos[];
 };
@@ -54,6 +52,5 @@ void main() {
     if (FragPos.y > widget.pos_two.y) {
         colour = vec4(0,0,0,0);
     }
-    InfoMap = vec4(0, 0, 0, 1); // height / extra info
     FragColor = colour;
 }
