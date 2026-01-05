@@ -11,7 +11,9 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTimer
 import sys
 from PassSystem import ShaderPassData, Texture
+
 Image.MAX_IMAGE_PIXELS = None
+
 
 class ShaderPass(Enum):
     PASS_MAP = 0
@@ -29,7 +31,7 @@ class AssetDataType(Enum):
 
 
 class GSGRenderSystem(QOpenGLWidget):
-    def __init__(self , GSG_gui_system):
+    def __init__(self, GSG_gui_system):
         super().__init__()
         self.fullscreen_vao = None
         self.fullscreen_vbo = None
@@ -42,13 +44,15 @@ class GSGRenderSystem(QOpenGLWidget):
         self.asset_ids = self.GSG_gui_system.asset_ids
         self.text_ids = self.GSG_gui_system.text_ids
         self.texture_atlas = Image.open("assets/image_atlases/atlas.png")
-        self.atlas_texture:Texture | None = None
+        self.atlas_texture: Texture | None = None
         self.open_assets = set()
-        self.buffers: dict[int,WidgetDataType] = {}  # name -> buffer id
+        self.buffers: dict[int, WidgetDataType] = {}  # name -> buffer id
         self.assets_to_update = {}
         self.widget_max = self.GSG_gui_system.widget_max
-        self.vertices = np.full((self.widget_max * 4) , 3.0 , dtype=np.float32)
-        self.quad = np.array([-1.0, -1.0, 0.0, 0.0,1.0, -1.0, 1.0, 0.0,-1.0,  1.0, 0.0, 1.0,-1.0,  1.0, 0.0, 1.0,1.0, -1.0, 1.0, 0.0,1.0,  1.0, 1.0, 1.0,], dtype=np.float32)
+        self.vertices = np.full((self.widget_max * 4), 3.0, dtype=np.float32)
+        self.quad = np.array(
+            [-1.0, -1.0, 0.0, 0.0, 1.0, -1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 1.0, 0.0, 1.0, 1.0, -1.0, 1.0, 0.0,
+             1.0, 1.0, 1.0, 1.0, ], dtype=np.float32)
         self.render_queue: EventQueue = event_system.add_queue("renderer")
         self.shader_passes: dict[ShaderPass, ShaderPassData] = {}
     
@@ -72,22 +76,24 @@ class GSGRenderSystem(QOpenGLWidget):
         priority = 0
         destination = "ui_manager"
         event_type = EventTypeEnum.Resize
-        if not isinstance(width , int):
+        if not isinstance(width, int):
             int(width)
-        if not isinstance(height , int):
+        if not isinstance(height, int):
             int(height)
-        event_data = (width , height)
-        event = (priority , destination , event_type , event_data)
+        event_data = (width, height)
+        event = (priority, destination, event_type, event_data)
         self.render_queue.send_event(event)
         
         glEnable(GL_PROGRAM_POINT_SIZE)
         
-        self.shader_passes[ShaderPass.PASS_BASIC] = ShaderPassData("assets/shaders/basic_frag.glsl", "assets/shaders/basic_vert.glsl")
-        self.shader_passes[ShaderPass.PASS_FINAL] = ShaderPassData("assets/shaders/final_frag.glsl", "assets/shaders/final_vert.glsl")
+        self.shader_passes[ShaderPass.PASS_BASIC] = ShaderPassData("assets/shaders/basic_frag.glsl",
+                                                                   "assets/shaders/basic_vert.glsl")
+        self.shader_passes[ShaderPass.PASS_FINAL] = ShaderPassData("assets/shaders/final_frag.glsl",
+                                                                   "assets/shaders/final_vert.glsl")
         
         # --- build shader program ---
         self.init_shaders(self.shader_passes)
-        for shader_pass_type,shader_pass in self.shader_passes.items():
+        for shader_pass_type, shader_pass in self.shader_passes.items():
             # --- create VAO + VBO for your existing self.quad ---
             shader_pass.assign_vao()
             shader_pass.assign_vbo()
@@ -113,11 +119,11 @@ class GSGRenderSystem(QOpenGLWidget):
             
             glBindBuffer(GL_ARRAY_BUFFER, 0)
             glBindVertexArray(0)
-            
+        
         self.atlas_texture = Texture(self.texture_atlas)
         
         self.init_SSBOs()
-        
+    
     def init_data(self):
         for data in self.GSG_gui_system.widget_data:
             self.buffers[data] = self.GSG_gui_system.widget_data[data]
@@ -135,10 +141,10 @@ class GSGRenderSystem(QOpenGLWidget):
         
         for data_enum in self.buffers.keys():
             self.update_ssbo(data_enum)
-            
+        
         self.basic_render_pass()
         self.final_render_pass()
-        
+    
     def final_render_pass(self):
         shader_pass = self.shader_passes[ShaderPass.PASS_FINAL]
         
@@ -149,7 +155,7 @@ class GSGRenderSystem(QOpenGLWidget):
         glBindVertexArray(shader_pass.vao)
         glDrawArrays(GL_TRIANGLES, 0, 6)
         glBindVertexArray(0)
-        
+    
     def basic_render_pass(self):
         shader_pass = self.shader_passes[ShaderPass.PASS_BASIC]
         
@@ -170,7 +176,7 @@ class GSGRenderSystem(QOpenGLWidget):
         
         glDrawArrays(GL_POINTS, 0, self.widget_max)
         glBindVertexArray(0)
-        
+    
     def update_ssbo(self, data_enum):
         buffer_id = self.buffers.get(data_enum)
         if not buffer_id:
@@ -184,7 +190,7 @@ class GSGRenderSystem(QOpenGLWidget):
     def update_geometry(self):
         pass
     
-    def init_shaders(self , shader_dir: dict):
+    def init_shaders(self, shader_dir: dict):
         for shader_pass in shader_dir.values():
             shader_pass: ShaderPassData = shader_pass
             shader_pass.load(self)
@@ -194,13 +200,13 @@ class GSGRenderSystem(QOpenGLWidget):
     
     def init_assets(self):
         for asset in self.asset_ids:
-            if asset not in self.open_assets:#correct asset found
+            if asset not in self.open_assets:  # correct asset found
                 asset_id = self.asset_ids[asset]
                 if self.file_type(asset) == "text":
-                    file = open(asset,"r")
+                    file = open(asset, "r")
                 elif self.file_type(asset) == "binary":
                     file = open(asset, "r+b")
-                elif self.file_type(asset) == "image":#finds file type image
+                elif self.file_type(asset) == "image":  # finds file type image
                     file = Image.open(asset).convert("RGBA")
                     print(file)
                     assets_per_row = 32
@@ -224,7 +230,7 @@ class GSGRenderSystem(QOpenGLWidget):
     def update_assets(self):
         self.init_assets()
     
-    def init_FBOs(self , width , height, shader_pass):
+    def init_FBOs(self, width, height, shader_pass):
         shader_pass.assign_fbo()
         glBindFramebuffer(GL_FRAMEBUFFER, shader_pass.fbo)
         
@@ -245,13 +251,13 @@ class GSGRenderSystem(QOpenGLWidget):
             raise RuntimeError(f"FBO incomplete: {hex(status)}")
         
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
-
+    
     def init_SSBOs(self):
         """
         Initializes SSBOs using the parent GSG_gui_system data.
         Each key in self.buffers comes from GSG_gui_system.widget_data.
         """
-        p:dict = {43:3,3:33}
+        p: dict = {43: 3, 3: 33}
         i = p.items()
         print(f"{i}")
         for data_enum, parent_array in self.GSG_gui_system.widget_data.items():
@@ -274,12 +280,11 @@ class GSGRenderSystem(QOpenGLWidget):
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
     
     @staticmethod
-    def load_shader_program(vertex_path , fragment_path):
+    def load_shader_program(vertex_path, fragment_path):
         # Helper to read file
         def read_file(path):
-            with open(path , "r") as f:
+            with open(path, "r") as f:
                 return f.read()
-        
         
         def include_glsl(path, seen=None):
             if seen is None:
@@ -305,12 +310,12 @@ class GSGRenderSystem(QOpenGLWidget):
             return final
         
         # Compile a shader
-        def compile_shader(source , shader_type):
+        def compile_shader(source, shader_type):
             shader = glCreateShader(shader_type)
-            glShaderSource(shader , source)
+            glShaderSource(shader, source)
             glCompileShader(shader)
             
-            if not glGetShaderiv(shader , GL_COMPILE_STATUS):
+            if not glGetShaderiv(shader, GL_COMPILE_STATUS):
                 log = glGetShaderInfoLog(shader).decode()
                 kind = "Vertex" if shader_type == GL_VERTEX_SHADER else "Fragment"
                 raise RuntimeError(f"{kind} shader compilation failed:\n{log}")
@@ -321,22 +326,22 @@ class GSGRenderSystem(QOpenGLWidget):
         fragment_src = include_glsl(fragment_path)
         
         # Compile shaders
-        vertex_shader = compile_shader(vertex_src , GL_VERTEX_SHADER)
-        fragment_shader = compile_shader(fragment_src , GL_FRAGMENT_SHADER)
+        vertex_shader = compile_shader(vertex_src, GL_VERTEX_SHADER)
+        fragment_shader = compile_shader(fragment_src, GL_FRAGMENT_SHADER)
         
         # Create program and link
         program = glCreateProgram()
-        glAttachShader(program , vertex_shader)
-        glAttachShader(program , fragment_shader)
+        glAttachShader(program, vertex_shader)
+        glAttachShader(program, fragment_shader)
         glLinkProgram(program)
         
-        if not glGetProgramiv(program , GL_LINK_STATUS):
+        if not glGetProgramiv(program, GL_LINK_STATUS):
             log = glGetProgramInfoLog(program).decode()
             raise RuntimeError(f"Shader program link failed:\n{log}")
         
         # Cleanup
-        glDetachShader(program , vertex_shader)
-        glDetachShader(program , fragment_shader)
+        glDetachShader(program, vertex_shader)
+        glDetachShader(program, fragment_shader)
         glDeleteShader(vertex_shader)
         glDeleteShader(fragment_shader)
         
@@ -371,11 +376,11 @@ class GSGRenderSystem(QOpenGLWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     win = GSGRenderSystem(None)
-    win.resize(800 , 600)
+    win.resize(800, 600)
     win.show()
     
     # Auto-exit after 2 seconds to test stability
-    QTimer.singleShot(2000 , app.quit)
+    QTimer.singleShot(2000, app.quit)
     
     app.exec_()
     print("✅ Test finished without crash.")
