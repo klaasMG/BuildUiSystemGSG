@@ -8,9 +8,8 @@ flat in int vIndex;
 out vec4 FragColor;
 flat in Widget widget;
 
-layout(std430, binding = 0) buffer Position {
-    int widget_pos[];
-};
+layout(location = 0) out vec4 outColor;
+layout(location = 1) out uint idDepth;
 
 void main() {
     // haal kleur van widget en zet naar 0..1
@@ -52,5 +51,6 @@ void main() {
     if (FragPos.y > widget.pos_two.y) {
         colour = vec4(0,0,0,0);
     }
-    FragColor = colour;
+    outColor = colour;
+    idDepth = 64;
 }

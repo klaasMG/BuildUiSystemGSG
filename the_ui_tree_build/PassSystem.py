@@ -9,7 +9,7 @@ class ShaderPassData:
         self.vao = None
         self.fbo = None
         self.texture = None
-        self.texture2 = None
+        self.info_map = None
     
     def load(self, renderer):
         """Use your renderer's loader function to compile and link the shader"""
@@ -31,7 +31,7 @@ class ShaderPassData:
         self.texture = glGenTextures(1)
         
     def assign_info_map(self):
-        self.texture2 = glGenTextures(1)
+        self.info_map = glGenTextures(1)
         
     def set_uniform(self, name, reference):
         loc = glGetUniformLocation(self.program, name)

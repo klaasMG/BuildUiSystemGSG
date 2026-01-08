@@ -7,6 +7,7 @@ from widget_data import WidgetDataType
 from event_system import event_system, EventQueue, EventTypeEnum
 from ui_debug import is_debug, debug_func
 
+CHANGE = 0
 class GSGWidget:
     FLAG_VISIBLE = 1 << 0
     FLAG_RENDER = 1 << 1

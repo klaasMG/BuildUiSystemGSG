@@ -35,6 +35,7 @@ class GSGRenderSystem(QOpenGLWidget):
         super().__init__()
         self.fullscreen_vao = None
         self.fullscreen_vbo = None
+        self.frame_times = []
         self.time = time.time()
         self.GSG_gui_system = GSG_gui_system
         self.assets = self.GSG_gui_system.assets
@@ -132,10 +133,13 @@ class GSGRenderSystem(QOpenGLWidget):
             self.buffers[data] = self.GSG_gui_system.widget_data[data]
     
     def paintGL(self):
+        glClearBufferfv(GL_COLOR, 0, (0.0, 0.0, 0.0, 0.0))  # RGBA8
+        glClearBufferuiv(GL_COLOR, 1, (0,))  # R32UI
         new_time = time.time()
         time_since = self.time - new_time
         self.time = new_time
         print(f"frame-time: {time_since}")
+        self.frame_times.append(time_since)
         self.update_assets()
         self.atlas_texture.resend(self.texture_atlas)
         
@@ -147,6 +151,7 @@ class GSGRenderSystem(QOpenGLWidget):
         
         self.basic_render_pass()
         self.final_render_pass()
+        
     
     def final_render_pass(self):
         shader_pass = self.shader_passes[ShaderPass.PASS_FINAL]
@@ -156,6 +161,12 @@ class GSGRenderSystem(QOpenGLWidget):
         
         glUseProgram(shader_pass.program)
         glBindVertexArray(shader_pass.vao)
+        prev_pass_tex = self.shader_passes[ShaderPass.PASS_BASIC].texture
+        glActiveTexture(GL_TEXTURE0)
+        glBindTexture(GL_TEXTURE_2D, prev_pass_tex)
+        # Tell the shader that 'sampler2D uPrevPass' is bound to unit 0
+        location = glGetUniformLocation(shader_pass.program, "uPrevPass")
+        glUniform1i(location, 0)
         glDrawArrays(GL_TRIANGLES, 0, 6)
         glBindVertexArray(0)
     
@@ -168,14 +179,6 @@ class GSGRenderSystem(QOpenGLWidget):
         glUseProgram(shader_pass.program)
         shader_pass.set_atlas()
         glBindVertexArray(shader_pass.vao)
-        
-        prev_pass_tex = self.shader_passes[ShaderPass.PASS_BASIC].texture
-        glActiveTexture(GL_TEXTURE0)
-        glBindTexture(GL_TEXTURE_2D, prev_pass_tex)
-        
-        # Tell the shader that 'sampler2D uPrevPass' is bound to unit 0
-        location = glGetUniformLocation(shader_pass.program, "uPrevPass")
-        glUniform1i(location, 0)
         
         glDrawArrays(GL_POINTS, 0, self.widget_max)
         glBindVertexArray(0)
@@ -190,16 +193,10 @@ class GSGRenderSystem(QOpenGLWidget):
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, array.nbytes, array)
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
     
-    def update_geometry(self):
-        pass
-    
     def init_shaders(self, shader_dir: dict):
         for shader_pass in shader_dir.values():
             shader_pass: ShaderPassData = shader_pass
             shader_pass.load(self)
-    
-    def init_geometry(self):
-        pass
     
     def init_assets(self):
         for asset in self.asset_ids:
@@ -238,15 +235,30 @@ class GSGRenderSystem(QOpenGLWidget):
         glBindFramebuffer(GL_FRAMEBUFFER, shader_pass.fbo)
         
         shader_pass.assign_text()
-        shader_pass.assign_info_map()
         glBindTexture(GL_TEXTURE_2D, shader_pass.texture)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
                      GL_RGBA, GL_UNSIGNED_BYTE, None)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
         
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                GL_TEXTURE_2D, shader_pass.texture, 0)
+        
+        shader_pass.assign_info_map()
+        glBindTexture(GL_TEXTURE_2D, shader_pass.info_map)
+        glTexImage2D(GL_TEXTURE_2D,0,GL_R32UI,width,height,0,GL_RED_INTEGER,GL_UNSIGNED_INT,None)
+        
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+        
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,
+                               GL_TEXTURE_2D, shader_pass.info_map, 0)
+        
+        glDrawBuffers(2, [GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1])
         
         status = glCheckFramebufferStatus(GL_FRAMEBUFFER)
         if status != GL_FRAMEBUFFER_COMPLETE:
