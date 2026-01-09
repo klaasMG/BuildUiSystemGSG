@@ -33,9 +33,11 @@ class AssetDataType(Enum):
 class GSGRenderSystem(QOpenGLWidget):
     def __init__(self, GSG_gui_system):
         super().__init__()
+        self.is_counting = False
+        self.frame_times: list[float] = []
+        self.real_time: list[float] = []
         self.fullscreen_vao = None
         self.fullscreen_vbo = None
-        self.frame_times = []
         self.time = time.time()
         self.GSG_gui_system = GSG_gui_system
         self.assets = self.GSG_gui_system.assets
@@ -133,13 +135,21 @@ class GSGRenderSystem(QOpenGLWidget):
             self.buffers[data] = self.GSG_gui_system.widget_data[data]
     
     def paintGL(self):
+        if self.is_counting:
+            if len(self.real_time) > 1:
+                self.frame_times.append(time.time() - self.real_time[-1])
+            else:
+                self.frame_times.append(0)
+            self.real_time.append(time.time())
+            if len(self.real_time) > 100:
+                with open("frame_times.txt", "a") as f:
+                    for t in self.frame_times:
+                        f.write(f"{t}\n")
+                self.real_time.clear()
+                self.frame_times.clear()
+        
         glClearBufferfv(GL_COLOR, 0, (0.0, 0.0, 0.0, 0.0))  # RGBA8
         glClearBufferuiv(GL_COLOR, 1, (0,))  # R32UI
-        new_time = time.time()
-        time_since = self.time - new_time
-        self.time = new_time
-        print(f"frame-time: {time_since}")
-        self.frame_times.append(time_since)
         self.update_assets()
         self.atlas_texture.resend(self.texture_atlas)
         
@@ -182,6 +192,18 @@ class GSGRenderSystem(QOpenGLWidget):
         
         glDrawArrays(GL_POINTS, 0, self.widget_max)
         glBindVertexArray(0)
+        
+        pixel = np.zeros(1, dtype=np.uint32)
+        
+        glReadBuffer(GL_COLOR_ATTACHMENT1)  # info_map
+        glReadPixels(
+            5, 5, 1, 1,
+            GL_RED_INTEGER,
+            GL_UNSIGNED_INT,
+            pixel
+        )
+        
+        value = int(pixel[0])
     
     def update_ssbo(self, data_enum):
         buffer_id = self.buffers.get(data_enum)
