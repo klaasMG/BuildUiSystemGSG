@@ -5,17 +5,22 @@ uniform sampler2D uAtlas;
 
 in vec2 vUV;
 flat in int vIndex;
-out vec4 FragColor;
 flat in Widget widget;
 
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out uint idDepth;
+layout(r32ui, binding = 0) uniform uimage2D heightMap;
 
 void main() {
     // haal kleur van widget en zet naar 0..1
+    uint height = widget.pos_one.z;
+    int int_height = int(height);
     ivec4 colour_255 = widget.colour;
     vec4 colour = vec4(0);
     vec2 FragPos = gl_FragCoord.xy;
+    ivec2 FragPosInt = ivec2(int(FragPos.x),int(FragPos.y));
+    uint oldHeight = imageLoad(heightMap, FragPosInt).r;
+    uint prev = imageAtomicMax(heightMap, FragPosInt, int_height);
     int pixel_pos_x = 0;
     int pixel_pos_y = 0;
     if (widget.asset_id == -1){
@@ -26,7 +31,6 @@ void main() {
         col_to_ndc(colour_255.w));
     }
     else {
-        ivec2 FragPosInt = ivec2(int(FragPos.x),int(FragPos.y));
         int asset_id = widget.asset_id;
         int pixel_x = FragPosInt.x - widget.pos_one.x;
         int pixel_y = FragPosInt.y - widget.pos_one.y;
@@ -40,17 +44,22 @@ void main() {
     }
 
     if (FragPos.x < widget.pos_one.x) {
-        colour = vec4(0,0,0,0);
+        discard;
     }
     if (FragPos.x > widget.pos_two.x) {
-        colour = vec4(0,0,0,0);
+        discard;
     }
     if (FragPos.y < widget.pos_one.y) {
-        colour = vec4(0,0,0,0);
+        discard;
     }
     if (FragPos.y > widget.pos_two.y) {
-        colour = vec4(0,0,0,0);
+        discard;
+    }
+    if (prev > height) {
+        discard;
     }
     outColor = colour;
-    idDepth = 64;
+    uint vUIndex = uint(vIndex);
+    uint height_id = pack2x16(height,vUIndex);
+    idDepth = height_id;
 }

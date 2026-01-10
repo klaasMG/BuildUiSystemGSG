@@ -29,13 +29,20 @@ class AssetDataType(Enum):
     TEXT_ASSET = 3
     IMAGE_ASSET = 4
 
+def unpack_u16(packed: int) -> tuple[int, int]:
+    a = packed & 0xFFFF
+    b = (packed >> 16) & 0xFFFF
+    return a, b
+
+
 
 class GSGRenderSystem(QOpenGLWidget):
     def __init__(self, GSG_gui_system):
         super().__init__()
-        self.is_counting = False
+        self.is_counting = True
         self.frame_times: list[float] = []
         self.real_time: list[float] = []
+        self.height_texture = None
         self.fullscreen_vao = None
         self.fullscreen_vbo = None
         self.time = time.time()
@@ -70,8 +77,12 @@ class GSGRenderSystem(QOpenGLWidget):
         event_data = (width, height)
         event = (priority, destination, event_type, event_data)
         self.render_queue.send_event(event)
-        for shader_pass in self.shader_passes.values():
-            self.init_FBOs(width, height, shader_pass)
+        for shader_type, shader_pass in self.shader_passes.items():
+            if shader_type == ShaderPass.PASS_FINAL:
+                pass
+            else:
+                self.init_FBOs(width, height, shader_pass)
+        self.init_textures(width, height)
     
     def initializeGL(self):
         time_start = time.time()
@@ -89,6 +100,8 @@ class GSGRenderSystem(QOpenGLWidget):
         self.render_queue.send_event(event)
         
         glEnable(GL_PROGRAM_POINT_SIZE)
+        glDisable(GL_BLEND)
+        glDisable(GL_DITHER)
         
         self.shader_passes[ShaderPass.PASS_BASIC] = ShaderPassData("assets/shaders/basic_frag.glsl",
                                                                    "assets/shaders/basic_vert.glsl")
@@ -124,6 +137,8 @@ class GSGRenderSystem(QOpenGLWidget):
             glBindBuffer(GL_ARRAY_BUFFER, 0)
             glBindVertexArray(0)
         
+        self.init_textures(height, width)
+        
         self.atlas_texture = Texture(self.texture_atlas)
         
         self.init_SSBOs()
@@ -138,6 +153,7 @@ class GSGRenderSystem(QOpenGLWidget):
         if self.is_counting:
             if len(self.real_time) > 1:
                 self.frame_times.append(time.time() - self.real_time[-1])
+                print(time.time() - self.real_time[-1])
             else:
                 self.frame_times.append(0)
             self.real_time.append(time.time())
@@ -161,7 +177,8 @@ class GSGRenderSystem(QOpenGLWidget):
         
         self.basic_render_pass()
         self.final_render_pass()
-        
+        clear_value = np.array([0], dtype=np.uint32)
+        glClearTexImage(self.height_texture, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, clear_value)
     
     def final_render_pass(self):
         shader_pass = self.shader_passes[ShaderPass.PASS_FINAL]
@@ -197,13 +214,18 @@ class GSGRenderSystem(QOpenGLWidget):
         
         glReadBuffer(GL_COLOR_ATTACHMENT1)  # info_map
         glReadPixels(
-            5, 5, 1, 1,
+            350, 250, 1, 1,
             GL_RED_INTEGER,
             GL_UNSIGNED_INT,
             pixel
         )
         
         value = int(pixel[0])
+        print(value)
+        height, widget_id = unpack_u16(value)
+        print(height)
+        print(widget_id)
+        
     
     def update_ssbo(self, data_enum):
         buffer_id = self.buffers.get(data_enum)
@@ -230,7 +252,7 @@ class GSGRenderSystem(QOpenGLWidget):
                     file = open(asset, "r+b")
                 elif self.file_type(asset) == "image":  # finds file type image
                     file = Image.open(asset).convert("RGBA")
-                    print(file)
+
                     assets_per_row = 32
                     tile_size = 256
                     col = asset_id % assets_per_row
@@ -251,6 +273,30 @@ class GSGRenderSystem(QOpenGLWidget):
     
     def update_assets(self):
         self.init_assets()
+        
+    def init_textures(self, height, width):
+        self.height_texture = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, self.height_texture)
+        
+        glTexImage2D(
+            GL_TEXTURE_2D,
+            0,
+            GL_R32UI,  # internal format
+            width,
+            height,
+            0,
+            GL_RED_INTEGER,  # MUST be *_INTEGER
+            GL_UNSIGNED_INT,
+            None
+        )
+        
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+        
+        glBindTexture(GL_TEXTURE_2D, 0)
+        glBindImageTexture(0,self.height_texture,0,GL_FALSE,0,GL_READ_WRITE,GL_R32UI)
     
     def init_FBOs(self, width, height, shader_pass):
         shader_pass.assign_fbo()
@@ -296,7 +342,6 @@ class GSGRenderSystem(QOpenGLWidget):
         """
         p: dict = {43: 3, 3: 33}
         i = p.items()
-        print(f"{i}")
         for data_enum, parent_array in self.GSG_gui_system.widget_data.items():
             # skip if already initialized
             if data_enum in self.buffers and self.buffers[data_enum] is not None:

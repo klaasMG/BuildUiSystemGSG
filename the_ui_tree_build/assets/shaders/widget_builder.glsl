@@ -33,3 +33,7 @@ float center_pos(int coord_one, int coord_two){
 int get_length(int x_one,int x_two){
     return abs(x_two - x_one);
 }
+
+uint pack2x16(uint a, uint b) {
+    return (a & 0xFFFFu) | ((b & 0xFFFFu) << 16);
+}
