@@ -340,8 +340,6 @@ class GSGRenderSystem(QOpenGLWidget):
         Initializes SSBOs using the parent GSG_gui_system data.
         Each key in self.buffers comes from GSG_gui_system.widget_data.
         """
-        p: dict = {43: 3, 3: 33}
-        i = p.items()
         for data_enum, parent_array in self.GSG_gui_system.widget_data.items():
             # skip if already initialized
             if data_enum in self.buffers and self.buffers[data_enum] is not None:
@@ -453,6 +451,29 @@ class GSGRenderSystem(QOpenGLWidget):
         self.asset_ids = self.GSG_gui_system.asset_ids
         self.text_ids = self.GSG_gui_system.text_ids
         self.update()
+        
+    def showEvent(self, event):
+        self.update_widget_origin()
+        super().showEvent(event)
+
+    def resizeEvent(self, event):
+        self.update_widget_origin()
+        super().resizeEvent(event)
+
+    def moveEvent(self, event):
+        self.update_widget_origin()
+        super().moveEvent(event)
+
+    def update_widget_origin(self):
+        pos = self.mapToGlobal(self.rect().topLeft())
+        win_x_low = pos.x()
+        win_y_low = pos.y()
+        win_w = self.width()
+        win_h = self.height()
+        win_x_high = win_x_low + win_w
+        win_y_high = win_y_low + win_h
+        self.GSG_gui_system.window_top = (win_x_low,win_y_low)
+        self.GSG_gui_system.window_bottom = (win_x_high,win_y_high)
 
 
 if __name__ == "__main__":

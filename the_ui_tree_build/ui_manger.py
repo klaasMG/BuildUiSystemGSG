@@ -84,6 +84,8 @@ class GSGUiManager:
         self.width = 0
         self.height = 0
         self.app = app(sys.argv , event_system=event_system)
+        self.window_top = None
+        self.window_bottom = None
     
     def run_ui_manager(self):
         self.running = True
