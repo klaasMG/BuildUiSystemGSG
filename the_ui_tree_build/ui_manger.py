@@ -70,6 +70,9 @@ class GSGUiManager:
         self.free_ids = []
         self.next_id = 0
         self.GSG_renderer_system = None
+        self.window_top = None
+        self.window_bottom = None
+        self.capture_input = False
         self.ui_manager_queue: EventQueue = event_system.add_queue("ui_manager")
         self.assets = []
         self.text = []
@@ -84,8 +87,6 @@ class GSGUiManager:
         self.width = 0
         self.height = 0
         self.app = app(sys.argv , event_system=event_system)
-        self.window_top = None
-        self.window_bottom = None
     
     def run_ui_manager(self):
         self.running = True

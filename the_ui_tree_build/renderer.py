@@ -474,6 +474,22 @@ class GSGRenderSystem(QOpenGLWidget):
         win_y_high = win_y_low + win_h
         self.GSG_gui_system.window_top = (win_x_low,win_y_low)
         self.GSG_gui_system.window_bottom = (win_x_high,win_y_high)
+    
+    def focusInEvent(self, e):
+        self.GSG_gui_system.capture_input = True
+        super().focusInEvent(e)
+    
+    def focusOutEvent(self, e):
+        self.GSG_gui_system.capture_input = False
+        super().focusOutEvent(e)
+    
+    def showEvent(self, e):
+        self.GSG_gui_system.capture_input = True
+        super().showEvent(e)
+    
+    def hideEvent(self, e):
+        self.GSG_gui_system.capture_input = False
+        super().hideEvent(e)
 
 
 if __name__ == "__main__":
