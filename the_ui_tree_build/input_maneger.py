@@ -1,5 +1,4 @@
 import time
-
 from pynput import keyboard, mouse
 
 class InputManager:
