@@ -5,6 +5,7 @@ from PyQt5.QtCore import QTimer
 import numpy as np
 from widget_data import WidgetDataType
 from event_system import event_system, EventQueue, EventTypeEnum
+from threading import Lock
 from ui_debug import is_debug, debug_func
 
 class GSGWidget:
@@ -56,6 +57,7 @@ class app(QApplication):
 
 class GSGUiManager:
     def __init__(self):
+        self.write_widget_data = Lock()
         self.depth_layers = 100
         self.widget_data = {}
         self.widget_max = 10000
@@ -214,6 +216,9 @@ class GSGUiManager:
             
             # clear children
             w.children.clear()
+            
+    def pos_update(self):
+        return False
 
 
 if __name__ == "__main__":
