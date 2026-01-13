@@ -7,6 +7,7 @@ from widget_data import WidgetDataType
 from event_system import event_system, EventQueue, EventTypeEnum
 from threading import Lock
 from ui_debug import is_debug, debug_func
+from update_data_manager import DataHolder
 
 class GSGWidget:
     FLAG_VISIBLE = 1 << 0
@@ -72,6 +73,7 @@ class GSGUiManager:
         self.free_ids = []
         self.next_id = 0
         self.GSG_renderer_system = None
+        self.Widget_update_data = DataHolder()
         self.window_top = None
         self.window_bottom = None
         self.capture_input = False
