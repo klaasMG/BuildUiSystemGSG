@@ -164,11 +164,7 @@ class GSGRenderSystem(QOpenGLWidget):
                 self.real_time.clear()
                 self.frame_times.clear()
             
-        is_widget_update = self.GSG_gui_system.pos_update()
-        if is_widget_update:
-            pass
-        else:
-            pass
+        self.GSG_gui_system.pos_update()
         
         glClearBufferfv(GL_COLOR, 0, (0.0, 0.0, 0.0, 0.0))  # RGBA8
         glClearBufferuiv(GL_COLOR, 1, (0,))  # R32UI

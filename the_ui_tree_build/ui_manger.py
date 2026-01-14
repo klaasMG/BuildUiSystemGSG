@@ -97,51 +97,49 @@ class GSGUiManager:
             self.next_id += 1
         self.widgets_by_id[widget.id] = widget
         
-        self.set_widget_defaults(widget, data=data if isinstance(data, list) else [])
+        self.set_widget_defaults(widget.id,widget.parent.id if widget.parent is not None else -1, data=data if isinstance(data, list) else [])
     
-    def update_widget(self , widget , data=None):
+    def update_widget(self , widget_id,parent , data=None):
         if not data or len(data) != 14 or data == [-1] * 14:
             return
-        i = widget.id
         pos = data[0:6]
         col = data[6:10]
         for p , j in enumerate(pos):
             if j == -1:
-                pos[p] = self.widget_data[WidgetDataType.POSITION][i * 6 + p]
+                pos[p] = self.widget_data[WidgetDataType.POSITION][widget_id * 6 + p]
         for p , j in enumerate(col):
             if j == -1:
-                col[p] = self.widget_data[WidgetDataType.COLOUR][i * 4 + p]
-        self.widget_data[WidgetDataType.POSITION][i * 6:i * 6 + 6] = pos
-        self.widget_data[WidgetDataType.COLOUR][i * 4:i * 4 + 4] = col
-        self.widget_data[WidgetDataType.SHADER_PASS][i] = data[10] if data[10] != -1 else self.widget_data[WidgetDataType.SHADER_PASS][i]
-        self.widget_data[WidgetDataType.SHAPE][i] = data[11] if data[11] != -1 else self.widget_data[WidgetDataType.SHAPE][i]
-        self.widget_data[WidgetDataType.PARENT][i] = widget.parent.id if widget.parent else self.widget_data[WidgetDataType.PARENT][i]
+                col[p] = self.widget_data[WidgetDataType.COLOUR][widget_id * 4 + p]
+        self.widget_data[WidgetDataType.POSITION][widget_id * 6:widget_id * 6 + 6] = pos
+        self.widget_data[WidgetDataType.COLOUR][widget_id * 4:widget_id * 4 + 4] = col
+        self.widget_data[WidgetDataType.SHADER_PASS][widget_id] = data[10] if data[10] != -1 else self.widget_data[WidgetDataType.SHADER_PASS][widget_id]
+        self.widget_data[WidgetDataType.SHAPE][widget_id] = data[11] if data[11] != -1 else self.widget_data[WidgetDataType.SHAPE][widget_id]
+        self.widget_data[WidgetDataType.PARENT][widget_id] = parent if parent != -1 else self.widget_data[WidgetDataType.PARENT][widget_id]
         if data[13] == "text":
-            self.widget_data[WidgetDataType.TEXT_ID][i] = self.next_text_id
+            self.widget_data[WidgetDataType.TEXT_ID][widget_id] = self.next_text_id
             self.asset_ids[data[12]] = self.next_text_id
             self.next_text_id += 1
         elif data[13] == "asset":
-            self.widget_data[WidgetDataType.ASSETS_ID][i] = self.next_asset_id
+            self.widget_data[WidgetDataType.ASSETS_ID][widget_id] = self.next_asset_id
             self.asset_ids[data[12]] = self.next_asset_id
             self.next_asset_id += 1
     
-    def set_widget_defaults(self , widget , data=None):
+    def set_widget_defaults(self , widget_id, parent , data=None):
         if not data or len(data) != 14:
             data = [-1] * 14
-        i = widget.id
         pos = data[0:6]
         col = data[6:10]
-        self.widget_data[WidgetDataType.POSITION][i * 6:i * 6 + 6] = pos
-        self.widget_data[WidgetDataType.COLOUR][i * 4:i * 4 + 4] = col
-        self.widget_data[WidgetDataType.SHADER_PASS][i] = data[10]
-        self.widget_data[WidgetDataType.SHAPE][i] = data[11]
-        self.widget_data[WidgetDataType.PARENT][i] = widget.parent.id if widget.parent else -1
+        self.widget_data[WidgetDataType.POSITION][widget_id * 6:widget_id * 6 + 6] = pos
+        self.widget_data[WidgetDataType.COLOUR][widget_id * 4:widget_id * 4 + 4] = col
+        self.widget_data[WidgetDataType.SHADER_PASS][widget_id] = data[10]
+        self.widget_data[WidgetDataType.SHAPE][widget_id] = data[11]
+        self.widget_data[WidgetDataType.PARENT][widget_id] = parent if parent is not None else -1
         if data[13] == "text":
-            self.widget_data[WidgetDataType.TEXT_ID][i] = self.next_text_id
+            self.widget_data[WidgetDataType.TEXT_ID][widget_id] = self.next_text_id
             self.asset_ids[data[12]] = self.next_text_id
             self.next_text_id += 1
         elif data[13] == "asset":
-            self.widget_data[WidgetDataType.ASSETS_ID][i] = self.next_asset_id
+            self.widget_data[WidgetDataType.ASSETS_ID][widget_id] = self.next_asset_id
             self.asset_ids[data[12]] = self.next_asset_id
             self.next_text_id += 1
     
@@ -185,9 +183,37 @@ class GSGUiManager:
             w.children.clear()
             
     def pos_update(self):
-        return False
-
-
+        data_list = self.Widget_update_data.take_data()
+        if data_list:
+            for widget_id,data in data_list:
+                is_widget = self.widget_exist(widget_id)
+                if is_widget:
+                    parent = data[0]
+                    if parent != -1:
+                        raise NotImplementedError("implement id passing instead of widget")
+                    data = data[1]
+                    self.update_widget(widget_id,parent,data)
+                    del widget_id
+                else:
+                    pass
+        else:
+            pass
+        
+    def widget_exist(self, widget_id):
+        pos = self.widget_data[WidgetDataType.POSITION][widget_id*6 : widget_id*6 + 6]
+        col = self.widget_data[WidgetDataType.COLOUR][widget_id*4 : widget_id*4 + 4]
+        shape = self.widget_data[WidgetDataType.SHAPE][widget_id]
+        asset_id = self.widget_data[WidgetDataType.ASSETS_ID][widget_id]
+        text_id = self.widget_data[WidgetDataType.TEXT_ID][widget_id]
+        parent = self.widget_data[WidgetDataType.PARENT][widget_id]
+        shader_pass = self.widget_data[WidgetDataType.SHADER_PASS][widget_id]
+        is_widget = True
+        if pos.count(-1) == len(pos):
+            if col.count(-1) == len(col):
+                if (shape == -1) and (asset_id == -1) and (text_id == -1) and (parent == -1) and (shader_pass == -1):
+                    is_widget = False
+        return is_widget
+        
 if __name__ == "__main__":
     manager = GSGUiManager()
     manager.run_ui_manager()
