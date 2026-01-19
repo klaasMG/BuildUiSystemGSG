@@ -98,6 +98,20 @@ class GSGUiManager:
         self.widgets_by_id[widget.id] = widget
         
         self.set_widget_defaults(widget.id,widget.parent.id if widget.parent is not None else -1, data=data if isinstance(data, list) else [])
+        
+    def set_widget_data(self, widget, data):
+        self.Widget_update_data.update_widget_data(widget, data)
+    
+    def set_default_widget_data(self, widget, data: dict):
+        used = set(data.keys())
+        expected = set(WidgetDataType)
+        excluded = {WidgetDataType.ASSETS_ID, WidgetDataType.ASSETS, WidgetDataType.TEXT, WidgetDataType.TEXT_ID, WidgetDataType.PARENT}
+        
+        missing = expected - excluded - used
+        if missing:
+            raise ValueError(f"Missing enum cases: {missing}")
+        
+        self.set_widget_data(widget, data)
     
     def update_widget(self , widget_id,parent , data=None):
         if not data or len(data) != 14 or data == [-1] * 14:

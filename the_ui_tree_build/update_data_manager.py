@@ -34,7 +34,7 @@ class DataHolder:
     @staticmethod
     def dif_to_data(dif):
         data = [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,]
-        parent = None
+        parent = -1
         for widget_data_type, value in dif.items():
             if widget_data_type == WidgetDataType.POSITION:
                 data[0:6] = value
