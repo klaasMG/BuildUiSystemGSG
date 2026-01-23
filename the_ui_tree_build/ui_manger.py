@@ -9,6 +9,10 @@ from threading import Lock
 from ui_debug import is_debug, debug_func
 from update_data_manager import DataHolder
 from GSGwidget import GSGWidget
+from threading import Thread
+import faulthandler
+faulthandler.enable()
+
             
 class app(QApplication):
     def __init__(self, *args, event_system = None, **kwargs):
@@ -23,6 +27,7 @@ class app(QApplication):
 
 class GSGUiManager:
     def __init__(self):
+        self.sqaure_exist = False
         self.write_widget_data = Lock()
         self.depth_layers = 100
         self.widget_data = {}
@@ -53,6 +58,7 @@ class GSGUiManager:
         self.asset_path = set()
         self.root = GSGWidget(0)
         self.append_widget(self.root,data=None)
+        self.manager_thread = Thread(target=self.update_widgets(), daemon=True)
         self.width = 0
         self.height = 0
         self.app = app(sys.argv , event_system=event_system)
@@ -62,9 +68,12 @@ class GSGUiManager:
         self.GSG_renderer_system = GSGRenderSystem(self)
         self.GSG_renderer_system.show()
         
+        self.manager_thread.start()
+        
         self.sqaure = GSGWidget(parent=self.root)
         path_or_data = "assets/images/pattern.png"
-        self.append_widget(self.sqaure, [320, 200, 1, 420, 300, 1, 255, 255, 255, 255, 2, -1,path_or_data,"asset"])
+        self.append_widget(self.sqaure, {WidgetDataType.POSITION:[320, 200, 1, 420, 300, 1], WidgetDataType.COLOUR:[255, 255, 255, 255], WidgetDataType.SHADER_PASS:2,WidgetDataType.SHAPE: -1,
+                                         WidgetDataType.PATH_OR_DATA: path_or_data,WidgetDataType.ASSET_OR_TEXT: "asset"})
         
         self.frame_timer = QTimer()
         self.frame_timer.timeout.connect(self.update_ui_manager)
@@ -74,7 +83,7 @@ class GSGUiManager:
     
     def update_ui_manager(self):
         event = self.ui_manager_queue.receive_event()
-        self.update_widgets()
+        self.manager_thread.start()
         self.GSG_renderer_system.render_update()
         
     def use_event(self, event):
@@ -87,7 +96,8 @@ class GSGUiManager:
         return None
     
     def update_widgets(self):
-        pass
+        if self.sqaure_exist == False:
+            self.sqaure_exist = True
     
     def append_widget(self , widget, data):
         if self.free_ids:
@@ -96,22 +106,21 @@ class GSGUiManager:
             widget.id = self.next_id
             self.next_id += 1
         self.widgets_by_id[widget.id] = widget
+        self.set_default_widget_data(widget, data=data, is_new=True)
         
-        self.set_widget_defaults(widget.id,widget.parent.id if widget.parent is not None else -1, data=data if isinstance(data, list) else [])
-        
-    def set_widget_data(self, widget, data):
-        self.Widget_update_data.update_widget_data(widget, data)
+    def set_widget_data(self, widget, data,is_new):
+        self.Widget_update_data.update_widget_data(widget, data, is_new)
     
-    def set_default_widget_data(self, widget, data: dict):
-        used = set(data.keys())
-        expected = set(WidgetDataType)
-        excluded = {WidgetDataType.ASSETS_ID, WidgetDataType.ASSETS, WidgetDataType.TEXT, WidgetDataType.TEXT_ID, WidgetDataType.PARENT}
+    def set_default_widget_data(self, widget, data: dict,is_new):
+        if data is not None:
+            used = set(data.keys())
+            expected = set(WidgetDataType)
+            excluded = {WidgetDataType.ASSETS_ID, WidgetDataType.ASSETS, WidgetDataType.TEXT, WidgetDataType.TEXT_ID, WidgetDataType.PARENT}
         
-        missing = expected - excluded - used
-        if missing:
-            raise ValueError(f"Missing enum cases: {missing}")
-        
-        self.set_widget_data(widget, data)
+            missing = expected - excluded - used
+            if missing:
+                raise ValueError(f"Missing enum cases: {missing}")
+            self.set_widget_data(widget, data,is_new)
     
     def update_widget(self , widget_id,parent , data=None):
         if not data or len(data) != 14 or data == [-1] * 14:
@@ -198,18 +207,21 @@ class GSGUiManager:
             
     def pos_update(self):
         data_list = self.Widget_update_data.take_data()
+        print(data_list)
         if data_list:
+            print(data_list)
             for widget_id,data in data_list:
+                print(widget_id)
                 is_widget = self.widget_exist(widget_id)
                 if is_widget:
-                    parent = data[0]
+                    parent = data[1]
                     if parent != -1:
                         raise NotImplementedError("implement id passing instead of widget")
-                    data = data[1]
+                    data = data[0]
                     self.update_widget(widget_id,parent,data)
-                    del widget_id
                 else:
-                    pass
+                    parent = data[1]
+                    self.set_widget_defaults(widget_id,parent,data[0])
         else:
             pass
         

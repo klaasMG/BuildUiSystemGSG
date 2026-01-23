@@ -1,24 +1,31 @@
 from typing import Any
 from widget_data import WidgetDataType
 from GSGwidget import GSGWidget
+from copy import deepcopy
+from threading import Lock
 
 class DataHolder:
     def __init__(self):
         self.id_dif_data: dict[int, Any] = {}
+        self.data_exchange_lock = Lock()
     
     def take_data(self) -> dict:
-        for widget_id, value in self.id_dif_data.items():
-            self.id_dif_data[widget_id] = self.dif_to_data(value)
-        data = self.id_dif_data.copy()  # snapshot for caller
-        self.id_dif_data.clear()  # erase internal state
-        return data
+        with self.data_exchange_lock:
+            for widget_id, value in self.id_dif_data.items():
+                self.id_dif_data[widget_id] = self.dif_to_data(value)
+            data = deepcopy(self.id_dif_data)  # snapshot for caller
+            self.id_dif_data.clear()  # erase internal state
+            return data
     
-    def update_widget_data(self,widget,data: dict[WidgetDataType,int | list[int] | GSGWidget | str]):
-        widget_id = widget.id
-        if widget_id not in self.id_dif_data:
-            self.create_dif(widget_id,data)
-        else:
-            self.update_dif(widget_id,data)
+    def update_widget_data(self,widget,data: dict[WidgetDataType,int | list[int] | GSGWidget | str],new_widget:bool):
+        with self.data_exchange_lock:
+            widget_id = widget.id
+            if new_widget:
+                data[WidgetDataType.PARENT] = widget.parent.id
+            if widget_id not in self.id_dif_data:
+                self.create_dif(widget_id,data)
+            else:
+                self.update_dif(widget_id,data)
     
     def create_dif(self, widget_id, data):
         self.id_dif_data[widget_id] = data
@@ -46,10 +53,8 @@ class DataHolder:
                 data[11] = value
             elif widget_data_type == WidgetDataType.PARENT:
                 parent = value
-            elif widget_data_type == WidgetDataType.TEXT:
+            elif widget_data_type == WidgetDataType.PATH_OR_DATA:
+                data[12] = value
+            elif widget_data_type == WidgetDataType.ASSET_OR_TEXT:
                 data[13] = value
-                data[14] = "text"
-            elif widget_data_type == WidgetDataType.ASSETS:
-                data[13] = value
-                data[14] = "asset"
         return data, parent

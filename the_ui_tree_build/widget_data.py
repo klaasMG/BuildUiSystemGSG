@@ -11,3 +11,4 @@ class WidgetDataType(Enum):
     TEXT = 7
     PARENT = 8
     ASSET_OR_TEXT = 9
+    PATH_OR_DATA = 10

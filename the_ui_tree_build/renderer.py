@@ -165,6 +165,7 @@ class GSGRenderSystem(QOpenGLWidget):
                 self.frame_times.clear()
             
         self.GSG_gui_system.pos_update()
+        print("run_here")
         
         glClearBufferfv(GL_COLOR, 0, (0.0, 0.0, 0.0, 0.0))  # RGBA8
         glClearBufferuiv(GL_COLOR, 1, (0,))  # R32UI
