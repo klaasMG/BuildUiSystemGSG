@@ -5,11 +5,10 @@ from PyQt5.QtCore import QTimer
 import numpy as np
 from widget_data import WidgetDataType
 from event_system import event_system, EventQueue, EventTypeEnum
-from threading import Lock
+from threading import Lock, Thread
 from ui_debug import is_debug, debug_func
 from update_data_manager import DataHolder
 from GSGwidget import GSGWidget
-from threading import Thread
 import faulthandler
 faulthandler.enable()
 
@@ -27,7 +26,7 @@ class app(QApplication):
 
 class GSGUiManager:
     def __init__(self):
-        self.sqaure_exist = False
+        self.square_exist = False
         self.write_widget_data = Lock()
         self.depth_layers = 100
         self.widget_data = {}
@@ -58,23 +57,16 @@ class GSGUiManager:
         self.asset_path = set()
         self.root = GSGWidget(0)
         self.append_widget(self.root,data=None)
-        self.manager_thread = Thread(target=self.update_widgets(), daemon=True)
         self.width = 0
         self.height = 0
         self.app = app(sys.argv , event_system=event_system)
+        self.widget_thread = Thread(target=self.update_widgets())
     
     def run_ui_manager(self):
         self.running = True
         self.GSG_renderer_system = GSGRenderSystem(self)
         self.GSG_renderer_system.show()
-        
-        self.manager_thread.start()
-        
-        self.sqaure = GSGWidget(parent=self.root)
-        path_or_data = "assets/images/pattern.png"
-        self.append_widget(self.sqaure, {WidgetDataType.POSITION:[320, 200, 1, 420, 300, 1], WidgetDataType.COLOUR:[255, 255, 255, 255], WidgetDataType.SHADER_PASS:2,WidgetDataType.SHAPE: -1,
-                                         WidgetDataType.PATH_OR_DATA: path_or_data,WidgetDataType.ASSET_OR_TEXT: "asset"})
-        
+        self.widget_thread.start()
         self.frame_timer = QTimer()
         self.frame_timer.timeout.connect(self.update_ui_manager)
         self.frame_timer.start(16)  # ~60 FPS
@@ -83,7 +75,6 @@ class GSGUiManager:
     
     def update_ui_manager(self):
         event = self.ui_manager_queue.receive_event()
-        self.manager_thread.start()
         self.GSG_renderer_system.render_update()
         
     def use_event(self, event):
@@ -96,8 +87,16 @@ class GSGUiManager:
         return None
     
     def update_widgets(self):
-        if self.sqaure_exist == False:
-            self.sqaure_exist = True
+        if not self.square_exist:
+            print("3r")
+            self.sqaure = GSGWidget(parent=self.root)
+            path_or_data = "assets/images/pattern.png"
+            self.append_widget(self.sqaure, {WidgetDataType.POSITION: [320, 200, 1, 420, 300, 1],
+                                             WidgetDataType.COLOUR: [255, 255, 255, 255], WidgetDataType.SHADER_PASS: 2,
+                                             WidgetDataType.SHAPE: -1,
+                                             WidgetDataType.PATH_OR_DATA: path_or_data,
+                                             WidgetDataType.ASSET_OR_TEXT: "asset"})
+            self.square_exist = True
     
     def append_widget(self , widget, data):
         if self.free_ids:
@@ -207,11 +206,8 @@ class GSGUiManager:
             
     def pos_update(self):
         data_list = self.Widget_update_data.take_data()
-        print(data_list)
         if data_list:
-            print(data_list)
             for widget_id,data in data_list:
-                print(widget_id)
                 is_widget = self.widget_exist(widget_id)
                 if is_widget:
                     parent = data[1]
