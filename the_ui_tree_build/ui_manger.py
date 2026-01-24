@@ -60,10 +60,10 @@ class GSGUiManager:
         self.width = 0
         self.height = 0
         self.app = app(sys.argv , event_system=event_system)
+        self.running = True
         self.widget_thread = Thread(target=self.update_widgets())
     
     def run_ui_manager(self):
-        self.running = True
         self.GSG_renderer_system = GSGRenderSystem(self)
         self.GSG_renderer_system.show()
         self.widget_thread.start()
@@ -87,16 +87,17 @@ class GSGUiManager:
         return None
     
     def update_widgets(self):
-        if not self.square_exist:
-            print("3r")
-            self.sqaure = GSGWidget(parent=self.root)
-            path_or_data = "assets/images/pattern.png"
-            self.append_widget(self.sqaure, {WidgetDataType.POSITION: [320, 200, 1, 420, 300, 1],
+        while self.running:
+            if not self.square_exist:
+                print("3r")
+                self.sqaure = GSGWidget(parent=self.root)
+                path_or_data = "assets/images/pattern.png"
+                self.append_widget(self.sqaure, {WidgetDataType.POSITION: [320, 200, 1, 420, 300, 1],
                                              WidgetDataType.COLOUR: [255, 255, 255, 255], WidgetDataType.SHADER_PASS: 2,
                                              WidgetDataType.SHAPE: -1,
                                              WidgetDataType.PATH_OR_DATA: path_or_data,
                                              WidgetDataType.ASSET_OR_TEXT: "asset"})
-            self.square_exist = True
+                self.square_exist = True
     
     def append_widget(self , widget, data):
         if self.free_ids:
