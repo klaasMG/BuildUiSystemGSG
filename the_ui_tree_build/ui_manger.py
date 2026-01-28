@@ -30,6 +30,7 @@ class app(QApplication):
 
 class GSGUiManager:
     def __init__(self):
+        self.buffers_swapped = False
         self.square_exist = False
         self.write_widget_data = Lock()
         self.depth_layers = 100
@@ -214,6 +215,7 @@ class GSGUiManager:
         acquired = self.hold_lock.lock(time_out=0.01)
         if acquired:
             self.GSG_renderer_system.widget_data, self.widget_data = self.widget_data, self.GSG_renderer_system.widget_data
+            self.buffers_swapped = True
             released = self.hold_lock.release()
 
 if __name__ == "__main__":

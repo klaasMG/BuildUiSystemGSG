@@ -9,8 +9,11 @@ class DataHolder:
         self.id_dif_data: dict[int, Any] = {}
         self.id_widget_data: dict[int, Any] = {}
         self.GSG_ui_system = GSGuisystem
+        self.changes = {}
     
     def update_widget_data(self,widget: GSGWidget,data: dict[WidgetDataType,int | list[int] | GSGWidget | str],new_widget:bool):
+        if self.GSG_ui_system.buffers_swapped:
+            self.update_changes()
         widget_id = widget.id
         widget_parent = widget.parent.id
         if new_widget:
@@ -22,6 +25,8 @@ class DataHolder:
         for widget_id, data in self.id_dif_data.items():
             id_data_list = self.dif_to_data(data)
             self.id_widget_data[widget_id] = id_data_list
+            id_change_list = [id_data_list[0], id_data_list[1], new_widget]
+            self.changes[widget_id] = id_change_list
         acquired = self.GSG_ui_system.hold_lock.lock()
         if acquired:
             for widget_id, value in self.id_widget_data.items():
@@ -30,7 +35,20 @@ class DataHolder:
                 if new_widget:
                     self.GSG_ui_system.set_widget_defaults(widget_id, widget_parent, widget_data)
                 else:
-                    self.GSG_ui_system.update_widget(widget_data, widget_parent, widget_data)
+                    self.GSG_ui_system.update_widget(widget_id, widget_parent, widget_data)
+            self.GSG_ui_system.hold_lock.release()
+            
+    def update_changes(self):
+        acquired = self.GSG_ui_system.hold_lock.lock()
+        if acquired:
+            for widget_id, value in self.id_widget_data.items():
+                widget_parent = value[1]
+                widget_data = value[0]
+                new_widget = value[2]
+                if new_widget:
+                    self.GSG_ui_system.set_widget_defaults(widget_id, widget_parent, widget_data)
+                else:
+                    self.GSG_ui_system.update_widget(widget_id, widget_parent, widget_data)
             self.GSG_ui_system.hold_lock.release()
         
     

@@ -336,7 +336,7 @@ class GSGRenderSystem(QOpenGLWidget):
         Initializes SSBOs using the parent GSG_gui_system data.
         Each key in self.buffers comes from GSG_gui_system.widget_data.
         """
-        for data_enum, parent_array in self.GSG_gui_system.widget_data.items():
+        for data_enum, parent_array in self.widget_data.items():
             # skip if already initialized
             if data_enum in self.buffers and self.buffers[data_enum] is not None:
                 continue
@@ -360,7 +360,7 @@ class GSGRenderSystem(QOpenGLWidget):
         if not buffer_id:
             return
         
-        array = np.array(self.GSG_gui_system.widget_data[data_enum], dtype=np.int32)
+        array = self.widget_data[data_enum]
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer_id)
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, array.nbytes, array)
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
