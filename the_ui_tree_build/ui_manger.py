@@ -94,11 +94,8 @@ class GSGUiManager:
     
     def update_widgets(self):
         while self.running:
-            tprint(time.time())
             if not self.square_exist:
-                tprint("3r")
                 self.sqaure = GSGWidget(parent=self.root)
-                tprint(self.sqaure)
                 path_or_data = "assets/images/pattern.png"
                 self.append_widget(self.sqaure, {WidgetDataType.POSITION: [320, 200, 1, 420, 300, 1],
                                              WidgetDataType.COLOUR: [255, 255, 255, 255], WidgetDataType.SHADER_PASS: 2,
@@ -216,7 +213,6 @@ class GSGUiManager:
             
     def pos_update(self):
         acquired = self.hold_lock.lock(time_out=0.01)
-        print(f"acquired{acquired}")
         if acquired:
             self.GSG_renderer_system.widget_data, self.widget_data = self.widget_data, self.GSG_renderer_system.widget_data
             released = self.hold_lock.release()

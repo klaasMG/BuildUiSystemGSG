@@ -46,7 +46,7 @@ class GSGRenderSystem(QOpenGLWidget):
                                                  WidgetDataType.ASSETS_ID: (self.widget_max, np.int32),
                                                  WidgetDataType.TEXT_ID: (self.widget_max, np.int32),
                                                  WidgetDataType.PARENT: (self.widget_max, np.int32)})
-        self.is_counting = False
+        self.is_counting = True
         self.frame_times: list[float] = []
         self.real_time: list[float] = []
         self.height_texture = None
@@ -173,8 +173,7 @@ class GSGRenderSystem(QOpenGLWidget):
         
         glClearBufferfv(GL_COLOR, 0, (0.0, 0.0, 0.0, 0.0))  # RGBA8
         glClearBufferuiv(GL_COLOR, 1, (0,))  # R32UI
-        atlas_update = self.update_assets()
-        self.atlas_texture.resend(self.texture_atlas)
+        self.update_assets()
         
         glClearColor(0.1, 0.1, 0.1, 1.0)
         glClear(GL_COLOR_BUFFER_BIT)
@@ -265,11 +264,11 @@ class GSGRenderSystem(QOpenGLWidget):
                         self.assets.append(None)
                         over_shoot -= 1
                 self.assets[asset_id] = file
-        return atlas_update
+        if atlas_update:
+            self.atlas_texture.resend(self.texture_atlas)
     
     def update_assets(self):
-        atlas_update = self.init_assets()
-        return atlas_update
+        self.init_assets()
         
     def init_textures(self, height, width):
         self.height_texture = glGenTextures(1)
