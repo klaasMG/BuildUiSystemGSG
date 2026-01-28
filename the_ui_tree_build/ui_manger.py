@@ -8,7 +8,6 @@ import numpy as np
 from widget_data import WidgetDataType
 from event_system import event_system, EventQueue, EventTypeEnum
 from threading import Lock, Thread
-from ui_debug import is_debug, debug_func
 from update_data_manager import DataHolder
 from GSGwidget import GSGWidget
 import faulthandler
