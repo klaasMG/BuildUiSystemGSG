@@ -10,10 +10,11 @@ class DataHolder:
         self.id_widget_data: dict[int, Any] = {}
         self.GSG_ui_system = GSGuisystem
     
-    def update_widget_data(self,widget,data: dict[WidgetDataType,int | list[int] | GSGWidget | str],new_widget:bool):
+    def update_widget_data(self,widget: GSGWidget,data: dict[WidgetDataType,int | list[int] | GSGWidget | str],new_widget:bool):
         widget_id = widget.id
+        widget_parent = widget.parent.id
         if new_widget:
-            data[WidgetDataType.PARENT] = widget.parent.id
+            data[WidgetDataType.PARENT] = widget_parent
         if widget_id not in self.id_dif_data:
             self.create_dif(widget_id,data)
         else:
@@ -23,6 +24,13 @@ class DataHolder:
             self.id_widget_data[widget_id] = id_data_list
         acquired = self.GSG_ui_system.hold_lock.lock()
         if acquired:
+            for widget_id, value in self.id_widget_data.items():
+                widget_parent = value[1]
+                widget_data = value[0]
+                if new_widget:
+                    self.GSG_ui_system.set_widget_defaults(widget_id, widget_parent, widget_data)
+                else:
+                    self.GSG_ui_system.update_widget(widget_data, widget_parent, widget_data)
             self.GSG_ui_system.hold_lock.release()
         
     

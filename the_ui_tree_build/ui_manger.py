@@ -216,25 +216,11 @@ class GSGUiManager:
             
     def pos_update(self):
         acquired = self.hold_lock.lock(time_out=0.01)
+        print(f"acquired{acquired}")
         if acquired:
             self.GSG_renderer_system.widget_data, self.widget_data = self.widget_data, self.GSG_renderer_system.widget_data
             released = self.hold_lock.release()
-        
-    def widget_exist(self, widget_id):
-        pos = self.widget_data[WidgetDataType.POSITION][widget_id*6 : widget_id*6 + 6]
-        col = self.widget_data[WidgetDataType.COLOUR][widget_id*4 : widget_id*4 + 4]
-        shape = self.widget_data[WidgetDataType.SHAPE][widget_id]
-        asset_id = self.widget_data[WidgetDataType.ASSETS_ID][widget_id]
-        text_id = self.widget_data[WidgetDataType.TEXT_ID][widget_id]
-        parent = self.widget_data[WidgetDataType.PARENT][widget_id]
-        shader_pass = self.widget_data[WidgetDataType.SHADER_PASS][widget_id]
-        is_widget = True
-        if pos.count(-1) == len(pos):
-            if col.count(-1) == len(col):
-                if (shape == -1) and (asset_id == -1) and (text_id == -1) and (parent == -1) and (shader_pass == -1):
-                    is_widget = False
-        return is_widget
-        
+
 if __name__ == "__main__":
     manager = GSGUiManager()
     manager.run_ui_manager()
