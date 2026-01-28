@@ -1,5 +1,4 @@
 import time
-
 from PyQt5.QtWidgets import QOpenGLWidget
 import numpy as np
 from OpenGL.GL import *
@@ -34,19 +33,26 @@ def unpack_u16(packed: int) -> tuple[int, int]:
     b = (packed >> 16) & 0xFFFF
     return a, b
 
-
-
 class GSGRenderSystem(QOpenGLWidget):
     def __init__(self, GSG_gui_system):
         super().__init__()
-        self.is_counting = True
+        self.GSG_gui_system = GSG_gui_system
+        self.widget_max = self.GSG_gui_system.widget_max
+        self.widget_data = {}
+        self.init_widget_data(widget_data_types={WidgetDataType.POSITION: (self.widget_max * 6, np.int32),
+                                                 WidgetDataType.SHADER_PASS: (self.widget_max, np.int32),
+                                                 WidgetDataType.COLOUR: (self.widget_max * 4, np.int32),
+                                                 WidgetDataType.SHAPE: (self.widget_max, np.int32),
+                                                 WidgetDataType.ASSETS_ID: (self.widget_max, np.int32),
+                                                 WidgetDataType.TEXT_ID: (self.widget_max, np.int32),
+                                                 WidgetDataType.PARENT: (self.widget_max, np.int32)})
+        self.is_counting = False
         self.frame_times: list[float] = []
         self.real_time: list[float] = []
         self.height_texture = None
         self.fullscreen_vao = None
         self.fullscreen_vbo = None
         self.time = time.time()
-        self.GSG_gui_system = GSG_gui_system
         self.assets = self.GSG_gui_system.assets
         self.text = self.GSG_gui_system.text
         self.text_set = self.GSG_gui_system.text_set
@@ -58,7 +64,6 @@ class GSGRenderSystem(QOpenGLWidget):
         self.open_assets = set()
         self.buffers: dict[int, WidgetDataType] = {}  # name -> buffer id
         self.assets_to_update = {}
-        self.widget_max = self.GSG_gui_system.widget_max
         self.vertices = np.full((self.widget_max * 4), 3.0, dtype=np.float32)
         self.quad = np.array(
             [-1.0, -1.0, 0.0, 0.0, 1.0, -1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 1.0, 0.0, 1.0, 1.0, -1.0, 1.0, 0.0,
@@ -168,7 +173,7 @@ class GSGRenderSystem(QOpenGLWidget):
         
         glClearBufferfv(GL_COLOR, 0, (0.0, 0.0, 0.0, 0.0))  # RGBA8
         glClearBufferuiv(GL_COLOR, 1, (0,))  # R32UI
-        self.update_assets()
+        atlas_update = self.update_assets()
         self.atlas_texture.resend(self.texture_atlas)
         
         glClearColor(0.1, 0.1, 0.1, 1.0)
@@ -224,17 +229,6 @@ class GSGRenderSystem(QOpenGLWidget):
         
         value = int(pixel[0])
         height, widget_id = unpack_u16(value)
-        
-    
-    def update_ssbo(self, data_enum):
-        buffer_id = self.buffers.get(data_enum)
-        if not buffer_id:
-            return
-        
-        array = np.array(self.GSG_gui_system.widget_data[data_enum], dtype=np.int32)
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer_id)
-        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, array.nbytes, array)
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
     
     def init_shaders(self, shader_dir: dict):
         for shader_pass in shader_dir.values():
@@ -242,6 +236,7 @@ class GSGRenderSystem(QOpenGLWidget):
             shader_pass.load(self)
     
     def init_assets(self):
+        atlas_update = False
         for asset in self.asset_ids:
             if asset not in self.open_assets:  # correct asset found
                 asset_id = self.asset_ids[asset]
@@ -260,6 +255,7 @@ class GSGRenderSystem(QOpenGLWidget):
                     paste_y = row * tile_size
                     self.texture_atlas.paste(file, (paste_x, paste_y), file)
                     self.texture_atlas.save("hy.png", format="PNG")
+                    atlas_update = True
                 else:
                     file = "broken"
                 self.open_assets.add(asset)
@@ -269,9 +265,11 @@ class GSGRenderSystem(QOpenGLWidget):
                         self.assets.append(None)
                         over_shoot -= 1
                 self.assets[asset_id] = file
+        return atlas_update
     
     def update_assets(self):
-        self.init_assets()
+        atlas_update = self.init_assets()
+        return atlas_update
         
     def init_textures(self, height, width):
         self.height_texture = glGenTextures(1)
@@ -357,6 +355,21 @@ class GSGRenderSystem(QOpenGLWidget):
             self.buffers[data_enum] = buffer_id
         
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
+    
+    def update_ssbo(self, data_enum):
+        buffer_id = self.buffers.get(data_enum)
+        if not buffer_id:
+            return
+        
+        array = np.array(self.GSG_gui_system.widget_data[data_enum], dtype=np.int32)
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer_id)
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, array.nbytes, array)
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
+    
+    def init_widget_data(self , widget_data_types: dict):
+        for key , (size , dtype) in widget_data_types.items():
+            arr = np.full(size , -1 , dtype=dtype)
+            self.widget_data[key] = arr
     
     @staticmethod
     def load_shader_program(vertex_path, fragment_path):

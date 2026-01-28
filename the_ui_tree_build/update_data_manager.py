@@ -1,31 +1,30 @@
 from typing import Any
 from widget_data import WidgetDataType
 from GSGwidget import GSGWidget
-from copy import deepcopy
 from threading import Lock
+from print_wrapper import tprint
 
 class DataHolder:
-    def __init__(self):
+    def __init__(self,GSGuisystem):
         self.id_dif_data: dict[int, Any] = {}
-        self.data_exchange_lock = Lock()
-    
-    def take_data(self) -> dict:
-        with self.data_exchange_lock:
-            for widget_id, value in self.id_dif_data.items():
-                self.id_dif_data[widget_id] = self.dif_to_data(value)
-            data = deepcopy(self.id_dif_data)  # snapshot for caller
-            self.id_dif_data.clear()  # erase internal state
-            return data
+        self.id_widget_data: dict[int, Any] = {}
+        self.GSG_ui_system = GSGuisystem
     
     def update_widget_data(self,widget,data: dict[WidgetDataType,int | list[int] | GSGWidget | str],new_widget:bool):
-        with self.data_exchange_lock:
-            widget_id = widget.id
-            if new_widget:
-                data[WidgetDataType.PARENT] = widget.parent.id
-            if widget_id not in self.id_dif_data:
-                self.create_dif(widget_id,data)
-            else:
-                self.update_dif(widget_id,data)
+        widget_id = widget.id
+        if new_widget:
+            data[WidgetDataType.PARENT] = widget.parent.id
+        if widget_id not in self.id_dif_data:
+            self.create_dif(widget_id,data)
+        else:
+            self.update_dif(widget_id,data)
+        for widget_id, data in self.id_dif_data.items():
+            id_data_list = self.dif_to_data(data)
+            self.id_widget_data[widget_id] = id_data_list
+        acquired = self.GSG_ui_system.hold_lock.lock()
+        if acquired:
+            self.GSG_ui_system.hold_lock.release()
+        
     
     def create_dif(self, widget_id, data):
         self.id_dif_data[widget_id] = data

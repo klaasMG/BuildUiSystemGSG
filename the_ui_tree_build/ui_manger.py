@@ -1,3 +1,5 @@
+import time
+from print_wrapper import tprint
 from renderer import GSGRenderSystem
 import sys
 from PyQt5.QtWidgets import QApplication
@@ -10,19 +12,22 @@ from ui_debug import is_debug, debug_func
 from update_data_manager import DataHolder
 from GSGwidget import GSGWidget
 import faulthandler
+from hold_lock import HoldLock
 faulthandler.enable()
 
-            
+
 class app(QApplication):
-    def __init__(self, *args, event_system = None, **kwargs):
+    def __init__(self, *args, event_system = None,parent = None, **kwargs):
         super().__init__(*args , **kwargs)
         self.event_system = event_system
+        self.parent_stop = parent
         self.aboutToQuit.connect(self.on_quit)
     
     def on_quit(self):
-        print("Application is quitting")
+        tprint("Application is quitting")
         if self.event_system is not None:
             self.event_system.stop_event_system()
+            self.parent_stop.running = False
 
 class GSGUiManager:
     def __init__(self):
@@ -31,18 +36,19 @@ class GSGUiManager:
         self.depth_layers = 100
         self.widget_data = {}
         self.widget_max = 10000
-        self.init_widget_data(widget_data_types={ WidgetDataType.POSITION : (self.widget_max * 6 , np.int32),
-                                                  WidgetDataType.SHADER_PASS : (self.widget_max , np.int32) ,
-                                                  WidgetDataType.COLOUR : (self.widget_max * 4 , np.int32) ,
-                                                  WidgetDataType.SHAPE : (self.widget_max , np.int32) ,
-                                                  WidgetDataType.ASSETS_ID : (self.widget_max , np.int32) ,
-                                                  WidgetDataType.TEXT_ID : (self.widget_max , np.int32) ,
-                                                  WidgetDataType.PARENT : (self.widget_max , np.int32)})
+        self.init_widget_data(widget_data_types={WidgetDataType.POSITION : (self.widget_max * 6 , np.int32),
+                                                 WidgetDataType.SHADER_PASS : (self.widget_max , np.int32) ,
+                                                 WidgetDataType.COLOUR : (self.widget_max * 4 , np.int32) ,
+                                                 WidgetDataType.SHAPE : (self.widget_max , np.int32) ,
+                                                 WidgetDataType.ASSETS_ID : (self.widget_max , np.int32) ,
+                                                 WidgetDataType.TEXT_ID : (self.widget_max , np.int32) ,
+                                                 WidgetDataType.PARENT : (self.widget_max , np.int32)})
         self.widgets_by_id = {}
         self.free_ids = []
         self.next_id = 0
         self.GSG_renderer_system = None
-        self.Widget_update_data = DataHolder()
+        self.hold_lock = HoldLock()
+        self.Widget_update_data = DataHolder(self)
         self.window_top = None
         self.window_bottom = None
         self.capture_input = False
@@ -56,12 +62,12 @@ class GSGUiManager:
         self.text_set = set()
         self.asset_path = set()
         self.root = GSGWidget(0)
-        self.append_widget(self.root,data=None)
+        self.append_widget(self.root, data=None)
         self.width = 0
         self.height = 0
-        self.app = app(sys.argv , event_system=event_system)
+        self.app = app(sys.argv, event_system=event_system, parent=self)
         self.running = True
-        self.widget_thread = Thread(target=self.update_widgets())
+        self.widget_thread = Thread(target=self.update_widgets)
     
     def run_ui_manager(self):
         self.GSG_renderer_system = GSGRenderSystem(self)
@@ -88,9 +94,11 @@ class GSGUiManager:
     
     def update_widgets(self):
         while self.running:
+            tprint(time.time())
             if not self.square_exist:
-                print("3r")
+                tprint("3r")
                 self.sqaure = GSGWidget(parent=self.root)
+                tprint(self.sqaure)
                 path_or_data = "assets/images/pattern.png"
                 self.append_widget(self.sqaure, {WidgetDataType.POSITION: [320, 200, 1, 420, 300, 1],
                                              WidgetDataType.COLOUR: [255, 255, 255, 255], WidgetDataType.SHADER_PASS: 2,
@@ -98,6 +106,7 @@ class GSGUiManager:
                                              WidgetDataType.PATH_OR_DATA: path_or_data,
                                              WidgetDataType.ASSET_OR_TEXT: "asset"})
                 self.square_exist = True
+            time.sleep(0.1)
     
     def append_widget(self , widget, data):
         if self.free_ids:
@@ -206,21 +215,10 @@ class GSGUiManager:
             w.children.clear()
             
     def pos_update(self):
-        data_list = self.Widget_update_data.take_data()
-        if data_list:
-            for widget_id,data in data_list:
-                is_widget = self.widget_exist(widget_id)
-                if is_widget:
-                    parent = data[1]
-                    if parent != -1:
-                        raise NotImplementedError("implement id passing instead of widget")
-                    data = data[0]
-                    self.update_widget(widget_id,parent,data)
-                else:
-                    parent = data[1]
-                    self.set_widget_defaults(widget_id,parent,data[0])
-        else:
-            pass
+        acquired = self.hold_lock.lock(time_out=0.01)
+        if acquired:
+            self.GSG_renderer_system.widget_data, self.widget_data = self.widget_data, self.GSG_renderer_system.widget_data
+            released = self.hold_lock.release()
         
     def widget_exist(self, widget_id):
         pos = self.widget_data[WidgetDataType.POSITION][widget_id*6 : widget_id*6 + 6]
