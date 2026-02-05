@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/BuildUiSystemGSG.iml" filepath="$PROJECT_DIR$/.idea/BuildUiSystemGSG.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/event_struct.iml" filepath="$PROJECT_DIR$/.idea/event_struct.iml" />
     </modules>
   </component>
 </project>
