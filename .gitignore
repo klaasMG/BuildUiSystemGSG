@@ -4,4 +4,5 @@
 /the_ui_tree_build/libraries/libraries.egg-info/top_level.txt
 /the_ui_tree_build/hy.png
 /cmake-build-debug
+/.idea
 .gitignore
