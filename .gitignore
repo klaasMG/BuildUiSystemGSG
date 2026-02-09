@@ -5,4 +5,5 @@
 /the_ui_tree_build/hy.png
 /cmake-build-debug
 /.idea
+/the_code/config.json
 .gitignore
