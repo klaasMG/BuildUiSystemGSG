@@ -22,7 +22,7 @@ struct IdentNode : public ASTNode{
 
 struct FunctionNode : public ASTNode{
     IdentNode Ident;
-    std::vector<std::vector<IdentNode>> Args;  // Changed: just store IdentNodes directly
+    std::vector<IdentNode> Args;  // Changed: removed nested vector
 };
 
 class ASTGMAKE{
@@ -35,26 +35,24 @@ public:
         currentToken = 0;
     }
 
-    std::vector<std::unique_ptr<ASTNode>> getNodes(){  // Changed: use unique_ptr
+    std::vector<std::unique_ptr<ASTNode>> getNodes(){
         std::vector<std::unique_ptr<ASTNode>> nodes;
         while (currentToken < tokens.size()){
             Token token = getNextToken();
             if (token.type == TokenType::Identifier){
-                auto node = std::make_unique<FunctionNode>();  // Changed
+                auto node = std::make_unique<FunctionNode>();
                 Token left_bracket = getNextToken();
                 if (left_bracket.type != TokenType::LeftBracket){
                     throw_ast_error("Expected '(' after function name");
                 }
                 bool func_end = false;
-                std::vector<std::vector<IdentNode>> func_args;  // Changed
+                std::vector<IdentNode> func_args;  // Changed: single vector
                 while (!func_end){
                     Token next_token = getNextToken();
                     if (next_token.type == TokenType::Identifier || next_token.type == TokenType::Slash){
-                        std::vector<IdentNode> ident_nodes;  // Changed
-                        IdentNode ident_node;
+                        IdentNode ident_node;  // Changed: single node
                         ident_node.Ident = next_token.value;
-                        ident_nodes.push_back(ident_node);
-                        bool ident_end = false;  // Fixed typo
+                        bool ident_end = false;
                         while (!ident_end){
                             next_token = getNextToken();
                             if (next_token.type == TokenType::Comma){
@@ -64,16 +62,18 @@ public:
                                 func_end = true;
                                 ident_end = true;
                             }
-                            else if (next_token.type == TokenType::Identifier || next_token.type == TokenType::Slash){
-                                IdentNode ident_node_internal;
-                                ident_node_internal.Ident = next_token.value;
-                                ident_nodes.push_back(ident_node_internal);
+                            else if (next_token.type == TokenType::Identifier){
+                                // Append to the current identifier node
+                                ident_node.Ident += next_token.value;
+                            }
+                            else if (next_token.type == TokenType::Slash){
+                                ident_node.Ident += "\\";
                             }
                             else{
                                 throw_ast_error("Expected a 'identifier' or a ',' for end argument");
                             }
                         }
-                        func_args.push_back(ident_nodes);
+                        func_args.push_back(ident_node);  // Changed: push single node
                     }
                     else if (next_token.type == TokenType::RightBracket){
                         func_end = true;
@@ -81,9 +81,9 @@ public:
                 }
                 IdentNode identifier;
                 identifier.Ident = token.value;
-                node->Ident = identifier;  // Changed: use ->
+                node->Ident = identifier;
                 node->Args = func_args;
-                nodes.push_back(std::move(node));  // Changed
+                nodes.push_back(std::move(node));
             }
             else if (token.type != TokenType::Semicolon){
                 throw_ast_error("Expected ';' after function name");
@@ -99,7 +99,7 @@ private:
             currentToken++;
             return token;
         }
-        throw_ast_error("EOF error");  // Fixed typo
+        throw_ast_error("EOF error");
         return Token{};
     }
 

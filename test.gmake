@@ -1,1 +1,2 @@
-SetProjectDirectory();
+SetProjectDirectory(the_ui_tree_build/assets/shaders);
+SetProgram(ProgramOne, basic_vert.glsl, basic_frag.glsl);

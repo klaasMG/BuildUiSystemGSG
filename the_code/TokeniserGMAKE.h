@@ -55,9 +55,6 @@ public:
                 }
             }
         }
-        for (const auto& token : tokens){
-            std::cerr << "token " << token.value << std::endl;
-        }
         return tokens;
     }
 private:
@@ -76,7 +73,7 @@ private:
 
     bool is_alphabet(){
         char c = peek_char();
-        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '.') || (c == '_');
     }
 
     bool is_digit(){
