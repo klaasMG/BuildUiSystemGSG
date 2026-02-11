@@ -5,5 +5,8 @@
 /the_ui_tree_build/hy.png
 /cmake-build-debug
 /.idea
+/the_ui_tree_build/frame_times.txt
+shader_include_graph.exe
+/the_ui_tree_build/assets/preprocessed_shaders
 /the_code/config.json
 .gitignore
