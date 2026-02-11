@@ -14,7 +14,7 @@ layout(r32ui, binding = 0) uniform uimage2D heightMap;
 void main() {
     // haal kleur van widget en zet naar 0..1
     uint height = widget.pos_one.z;
-    int int_height = int(height);
+    uint int_height = uint(height);
     ivec4 colour_255 = widget.colour;
     vec4 colour = vec4(0);
     vec2 FragPos = gl_FragCoord.xy;

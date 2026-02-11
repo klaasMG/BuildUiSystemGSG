@@ -36,6 +36,10 @@ public:
         std::exit(code);
     }
 
+    void set_debug(const bool debug_input){
+        debug = debug_input;
+    }
+
     void add_to_call_stack(const std::string& text){
         call_stack.push_back(text);
     }

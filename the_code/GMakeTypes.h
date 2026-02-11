@@ -22,6 +22,7 @@ enum class GMakeFunction {
 };
 
 struct GMAKEConfig {
+    bool debug = false;
     fs::path ProjectDir;
     std::map<std::string, std::vector<fs::path>> ShaderPrograms;
     std::vector<fs::path> StandardExtensions;

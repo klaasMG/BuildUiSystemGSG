@@ -65,4 +65,10 @@ inline std::string ReadFilePath(const fs::path& path) {
     return data;
 }
 
+inline std::string toLower(std::string s) {
+    for (char& c : s)
+        c = std::tolower((unsigned char)c);
+    return s;
+}
+
 #endif //EVENT_STRUCT_FILE_UTILS_H

@@ -108,10 +108,10 @@ class GSGRenderSystem(QOpenGLWidget):
         glDisable(GL_BLEND)
         glDisable(GL_DITHER)
         
-        self.shader_passes[ShaderPass.PASS_BASIC] = ShaderPassData("assets/shaders/basic_frag.glsl",
-                                                                   "assets/shaders/basic_vert.glsl")
-        self.shader_passes[ShaderPass.PASS_FINAL] = ShaderPassData("assets/shaders/final_frag.glsl",
-                                                                   "assets/shaders/final_vert.glsl")
+        self.shader_passes[ShaderPass.PASS_BASIC] = ShaderPassData("assets/preprocessed_shaders/basic_frag.glsl",
+                                                                   "assets/preprocessed_shaders/basic_vert.glsl")
+        self.shader_passes[ShaderPass.PASS_FINAL] = ShaderPassData("assets/preprocessed_shaders/final_frag.glsl",
+                                                                   "assets/preprocessed_shaders/final_vert.glsl")
         
         # --- build shader program ---
         self.init_shaders(self.shader_passes)

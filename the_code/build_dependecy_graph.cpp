@@ -1,6 +1,3 @@
-//
-// Created by klaas on 2/5/2026.
-//
 #include "TokeniserGMAKE.h"
 #include "SimpleASTGMAKE.h"
 #include "GMAKE_EXEPTION.h"
@@ -12,6 +9,7 @@
 #include <map>
 #include <memory>
 #include <ranges>
+#include <unordered_set>
 #define PRINT(text) std::cout << text << std::endl
 
 namespace fs = std::filesystem;
@@ -19,6 +17,7 @@ namespace fs = std::filesystem;
 fs::path current_dir;
 bool debug = false;
 GMAKE_EXCEPTION ExceptionHandler = GMAKE_EXCEPTION{debug};
+std::unordered_set<std::string_view> allowed_flags = {"-debug",};
 
 GMAKEConfig runGMAKEFunction(const std::string& function_name, const std::vector<std::string>& function_args, GMAKEConfig config) {
     ExceptionHandler.add_to_call_stack(function_name);
@@ -69,7 +68,7 @@ std::vector<std::unique_ptr<ASTNode>> build_ast(const std::string& gmake_file){
 	return nodes;
 }
 
-std::string do_includes(const std::string& shader, std::map<fs::path, std::string>& open_shaders){
+std::string do_includes(const std::string& shader, std::map<fs::path, std::string>& open_shaders, const GMAKEConfig &config){
 	std::istringstream stream(shader);
 	std::string line;
 	std::string rebuild;
@@ -94,7 +93,7 @@ std::string do_includes(const std::string& shader, std::map<fs::path, std::strin
 					new_line = ReadFilePath(shader_path);
 				}
 				else{
-					fs::path shader_path_comb = current_dir / shader_path;
+					fs::path shader_path_comb = config.ProjectDir / shader_path;
 					new_line = ReadFilePath(shader_path_comb);
 				}
 			}
@@ -107,7 +106,7 @@ std::string do_includes(const std::string& shader, std::map<fs::path, std::strin
 	}
 
 	if (rebuild.contains("#include")){
-		rebuild = do_includes(rebuild, open_shaders);
+		rebuild = do_includes(rebuild, open_shaders, config);
 	}
 	return rebuild;
 }
@@ -116,8 +115,7 @@ void include_run(const fs::path& shader_directory, const GMAKEConfig &config){
 	std::map<fs::path, std::string> open_shader_files;
 	std::map<fs::path, std::string> open_include_files;
 
-	// Create GMakeDir in the current directory
-	fs::path new_dir = config.ProjectDir.parent_path() / "GMakeDir";
+	fs::path new_dir = config.ProjectDir.parent_path() / "preprocessed_shaders";
 	if (!fs::exists(new_dir)) {
 		fs::create_directory(new_dir);
 	}
@@ -127,30 +125,26 @@ void include_run(const fs::path& shader_directory, const GMAKEConfig &config){
 		for (const fs::path &file : shaders){
 			fs::path actual_file_path;
 
-			// Determine the actual file path
 			if (file.is_absolute()) {
 				actual_file_path = file;
 			} else {
 				actual_file_path = config.ProjectDir / file;
 			}
 
-			// Read and process the shader
 			std::string shader_content = ReadFilePath(actual_file_path);
 		    for (const fs::path& standard_path : config.StandardExtensions){
 		        std::string path_string = standard_path.string();
 		        std::string standard_file_path_include = "#include " + path_string;
 		        shader_content = insertLine(shader_content, 1, standard_file_path_include);
 		    }
-			std::string included_shader = do_includes(shader_content, open_shader_files);
+			std::string included_shader = do_includes(shader_content, open_shader_files, config);
 
-			// Create output path in GMakeDir
 			fs::path output_file = new_dir / file.filename();
 
 			open_include_files[output_file] = included_shader;
 		}
 	}
 
-	// Write all processed files
 	for (const std::pair<const fs::path, std::string> &write_file : open_include_files) {
 		PRINT("Writing to: " << write_file.first);
 		WriteFile(write_file.first, write_file.second);
@@ -166,26 +160,54 @@ std::vector<std::string> make_args(const std::vector<IdentNode>& args){
 }
 
 int main(int argc, char* argv[]) {
-	if (argc == 2){
-		current_dir = fs::current_path();
-		std::cout << current_dir << std::endl;
-		char* gmake_file_path = argv[1];
-		std::string gmake_file = readFile(gmake_file_path);
-		std::vector<std::unique_ptr<ASTNode>> nodes = build_ast(gmake_file);
-		GMAKEConfig config = GMAKEConfig();
-
-		for (const std::unique_ptr<ASTNode>& node : nodes){
-			if (dynamic_cast<FunctionNode*>(node.get())){
-				auto function = dynamic_cast<FunctionNode*>(node.get());
-				IdentNode function_name = function->Ident;
-				std::string name_check = function_name.Ident;
-				std::vector<IdentNode> function_args = function->Args;
-				std::vector<std::string> Args = make_args(function_args);
-				config = runGMAKEFunction(name_check, Args, config);
-			}
-		}
-		std::cout << config.ProjectDir << std::endl;
-		include_run("path", config);
+	if (argc >= 2){
+	    current_dir = fs::current_path();
+	    std::cout << current_dir << std::endl;
+	    char* gmake_file_path = argv[1];
+	    std::string gmake_file = readFile(gmake_file_path);
+	    std::vector<std::unique_ptr<ASTNode>> nodes = build_ast(gmake_file);
+	    GMAKEConfig config = GMAKEConfig();
+	    std::vector<std::string> flags;
+	    for (int i = 2; i < argc; i++){
+	        const std::string& arg = argv[i];
+	        if (arg == "-debug"){
+	            config.debug = true;
+	        }
+	        else if (!allowed_flags.contains(arg)){
+	            std::string error_message = "This flag: " + arg + " is not allowed\n" + "Do you wish to proceed?(Y/N)";
+	            std::cout << error_message << std::endl;
+	            std::string continue_program;
+	            std::cin >> continue_program;
+	            continue_program = toLower(continue_program);
+	            bool is_solved = false;
+	            while (!is_solved){
+	                if (continue_program == "y"){
+	                    is_solved = true;
+	                }
+	                else if (continue_program == "n"){
+	                    const int& exit_code = 1;
+	                    is_solved = true;
+	                    std::exit(exit_code);
+	                }
+	            }
+	            flags.push_back(arg);
+	        }
+	    }
+	    if (config.debug){
+	        ExceptionHandler.set_debug(true);
+	    }
+	    for (const std::unique_ptr<ASTNode>& node : nodes){
+	        if (dynamic_cast<FunctionNode*>(node.get())){
+                auto function = dynamic_cast<FunctionNode*>(node.get());
+	            IdentNode function_name = function->Ident;
+	            std::string name_check = function_name.Ident;
+	            std::vector<IdentNode> function_args = function->Args;
+	            std::vector<std::string> Args = make_args(function_args);
+	            config = runGMAKEFunction(name_check, Args, config);
+	        }
+	    }
+	    std::cout << config.ProjectDir << std::endl;
+	    include_run("path", config);
 	}
 	else{
 		std::cout << "wrong number of arguments" << std::endl;
