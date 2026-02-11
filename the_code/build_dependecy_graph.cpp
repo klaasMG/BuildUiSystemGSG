@@ -9,6 +9,7 @@
 #include <map>
 #include <memory>
 #include <ranges>
+#include <unordered_map>
 #define PRINT(text) cout << text << endl
 
 using namespace std;
@@ -16,10 +17,40 @@ namespace fs = std::filesystem;
 
 fs::path current_dir;
 
+enum class GMakeFunction {
+	SET_PROJECT_DIRECTORY,
+	SET_PROGRAM,
+	EXTEND_STANDARD,
+	UNKNOWN
+};
+
 struct GMAKEConfig {
 	fs::path ProjectDir;
 	map<string, vector<fs::path>> ShaderPrograms;
+    vector<fs::path> StandardExtensions;
 };
+
+string insertLine(std::string text, int lineIndex, const std::string& newLine){
+    size_t pos = 0;
+    int line = 0;
+
+    while (line < lineIndex && pos != std::string::npos)
+    {
+        pos = text.find('\n', pos);
+
+        if (pos != std::string::npos)
+            pos++; // move past '\n'
+
+        line++;
+    }
+
+    if (pos == std::string::npos)
+        text += newLine + "\n";   // append if too short
+    else
+        text.insert(pos, newLine + "\n");
+
+    return text;
+}
 
 string readFile(const char* path) {
 	ifstream file(path, ios::binary);
@@ -55,24 +86,52 @@ string ReadFilePath(const fs::path& path) {
 	return data;
 }
 
-GMAKEConfig runGMAKEFunction(const string& function_name, const vector<string>& function_args, GMAKEConfig config) {
-	if (function_name == "SetProjectDirectory"){
-		fs::path project_dir = function_args[0];
+GMakeFunction parseFunction(const string& name) {
+	static const unordered_map<string, GMakeFunction> functionMap = {
+		{"SetProjectDirectory", GMakeFunction::SET_PROJECT_DIRECTORY},
+		{"SetProgram", GMakeFunction::SET_PROGRAM},
+	    {"ExtendStandard", GMakeFunction::EXTEND_STANDARD}
+	};
 
-		if (project_dir.is_absolute()) {
-			config.ProjectDir = project_dir;
-		}
-		else {
-			config.ProjectDir = (current_dir / project_dir);
-		}
+	unordered_map<string, GMakeFunction>::const_iterator it = functionMap.find(name);
+	return (it != functionMap.end()) ? it->second : GMakeFunction::UNKNOWN;
+}
+
+GMAKEConfig runGMAKEFunction(const string& function_name, const vector<string>& function_args, GMAKEConfig config) {
+	switch (parseFunction(function_name)) {
+	case GMakeFunction::SET_PROJECT_DIRECTORY: {
+			fs::path project_dir = function_args[0];
+
+			if (project_dir.is_absolute()) {
+				config.ProjectDir = project_dir;
+			}
+			else {
+				config.ProjectDir = (current_dir / project_dir);
+			}
+			break;
 	}
-	else if (function_name == "SetProgram"){
-		string shader_program = function_args[0];
-		vector<fs::path> shaders;
-		for (const string& arg : function_args | std::views::drop(1)) {
-			shaders.push_back(fs::path(arg));
-		}
-		config.ShaderPrograms[shader_program] = shaders;
+
+	case GMakeFunction::SET_PROGRAM: {
+			const string& shader_program = function_args[0];
+			vector<fs::path> shaders;
+			for (const string& arg : function_args | std::views::drop(1)) {
+				fs::path path_arg = arg;
+				shaders.emplace_back(path_arg);
+			}
+			config.ShaderPrograms[shader_program] = shaders;
+			break;
+	}
+
+	case GMakeFunction::EXTEND_STANDARD:{
+	    for (const string arg : function_args){
+	        config.StandardExtensions.emplace_back(arg);
+	    }
+	    break;
+	}
+
+	case GMakeFunction::UNKNOWN:
+		throw runtime_error("Unknown function");
+		break;
 	}
 
 	return config;
@@ -86,12 +145,12 @@ vector<unique_ptr<ASTNode>> build_ast(const string& gmake_file){
 	return nodes;
 }
 
-string do_includes(string shader, map<fs::path, string>& open_shaders){
+string do_includes(const string& shader, map<fs::path, string>& open_shaders){
 	istringstream stream(shader);
 	string line;
 	string rebuild;
 	while (getline(stream, line)){
-		string new_line = "";
+		string new_line;
 		if (line.starts_with("#include")) {
 			// Extract the filename from #include "filename" or #include <filename>
 			size_t first_quote = line.find('"');
@@ -134,7 +193,7 @@ void include_run(const fs::path& shader_directory, const GMAKEConfig &config){
 	map<fs::path, string> open_include_files;
 
 	// Create GMakeDir in the current directory
-	fs::path new_dir = current_dir / "GMakeDir";
+	fs::path new_dir = config.ProjectDir.parent_path() / "GMakeDir";
 	if (!fs::exists(new_dir)) {
 		fs::create_directory(new_dir);
 	}
@@ -151,10 +210,13 @@ void include_run(const fs::path& shader_directory, const GMAKEConfig &config){
 				actual_file_path = config.ProjectDir / file;
 			}
 
-			PRINT(actual_file_path);
-
 			// Read and process the shader
 			string shader_content = ReadFilePath(actual_file_path);
+		    for (const fs::path& standard_path : config.StandardExtensions){
+		        string path_string = standard_path.string();
+		        string standard_file_path_include = "#include " + path_string;
+		        shader_content = insertLine(shader_content, 1, standard_file_path_include);
+		    }
 			string included_shader = do_includes(shader_content, open_shader_files);
 
 			// Create output path in GMakeDir
@@ -195,9 +257,6 @@ int main(int argc, char* argv[]) {
 				string name_check = function_name.Ident;
 				vector<IdentNode> function_args = function->Args;
 				vector<string> Args = make_args(function_args);
-				for (string i : Args){
-					cout << i << endl;
-				}
 				config = runGMAKEFunction(name_check, Args, config);
 			}
 		}
