@@ -49,7 +49,10 @@ set_target_properties(shader_preprocessing PROPERTIES
 
 add_executable(shader_include_graph the_code/build_dependecy_graph.cpp
         the_code/SimpleASTGMAKE.h
-        the_code/Tokens.h)
+        the_code/Tokens.h
+        the_code/GMAKE_EXEPTION.h
+        the_code/file_utils.h
+        the_code/GMakeTypes.h)
 
 set_target_properties(shader_include_graph PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY
