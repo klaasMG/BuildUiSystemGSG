@@ -35,6 +35,10 @@ set_target_properties(font_holder PROPERTIES
         SUFFIX ".pyd"
 )
 
+set_target_properties(font_holder PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY
+        ${CMAKE_CURRENT_SOURCE_DIR}/the_ui_tree_build)
+
 add_library(shader_preprocessing SHARED the_code/shader_preprocesing.cpp
         the_code/TokeniserGMAKE.h)
 
@@ -60,7 +64,5 @@ set_target_properties(shader_include_graph PROPERTIES
 )
 
 if(MINGW)
-    target_link_libraries(shader_include_graph -static-libgcc -static-libstdc++ -static)
-    # Or for the whole project:
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+    target_link_libraries(shader_include_graph PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()

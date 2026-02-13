@@ -1,7 +1,6 @@
 //
 // Created by klaas on 1/31/2026.
 //
-
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_treutype.h"
 #include "vector"
@@ -11,6 +10,10 @@
 #include <array>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
+#include <cmath>
+#include <cstring>
+#include <iostream>
+#include <pybind11/stl.h>
 
 using namespace std;
 namespace py = pybind11;
@@ -33,7 +36,6 @@ class Font {
 
 public:
     explicit Font(const string& filePath) : font{} {
-        // load font into memory
         ifstream file(filePath, ios::binary);
         fontData = vector<unsigned char>(istreambuf_iterator<char>(file), {});
 
@@ -42,25 +44,44 @@ public:
 
     }
 
+    ~Font(){
+        for (auto& [_, g] : glyphs){
+            stbtt_FreeShape(&font, g.vertices);
+        }
+    }
+
     py::array_t<uint8_t> get_raster_from_glyph(float pixelHeight, int unicode) {
         float scale = stbtt_ScaleForPixelHeight(&font, pixelHeight);
-        Glyph glyph = getGlyph(unicode);
-        array<int, 4> scaled_points = {static_cast<int>(ceil(glyph.x0 * scale)),static_cast<int>(ceil(glyph.x1 * scale)),static_cast<int>(ceil(glyph.y0 * scale)),static_cast<int>(ceil(glyph.y1 * scale))};
-        int w = scaled_points[1] - scaled_points[0];
-        int h = scaled_points[3] - scaled_points[2];
-        stbtt__bitmap bmp{};
-        bmp.w = w;
-        bmp.h = h;
-        bmp.stride = w;
-        bmp.pixels = (unsigned char*)malloc(w * h);
+        int glyph_index = stbtt_FindGlyphIndex(&font, unicode);
+        if (glyph_index == 0) {
+            return py::array_t<uint8_t>({0,0}, nullptr); // empty bitmap if glyph not found
+        }
 
-        memset(bmp.pixels, 0, w * h);
-        stbtt_vertex* verts = glyph.vertices;
-        int num_vertices = glyph.num_vertices;
+        int w, h, xoff, yoff;
+        unsigned char* bitmap = stbtt_GetGlyphBitmap(&font, scale, scale, glyph_index, &w, &h, &xoff, &yoff);
 
-        stbtt_Rasterize(&bmp,0.35f, verts,num_vertices,scale,scale,0, 0,scaled_points[0], scaled_points[2],1,nullptr);
-        py::array_t<uint8_t> rasterized_letter = wrap_uc_ptr(bmp.pixels,bmp.w,bmp.h);
-        return rasterized_letter;
+        return wrap_uc_ptr(bitmap, w, h);
+    }
+    std::tuple<int,int,int,int,int> get_render_info(float pixel_height, int unicode) {
+
+        int ascent, descent, lineGap;
+        stbtt_GetFontVMetrics(&font, &ascent, &descent, &lineGap);
+
+        float scale = stbtt_ScaleForPixelHeight(&font, pixel_height);
+
+        const Glyph &glyph = getGlyph(unicode);
+
+        int scaledAscent  = static_cast<int>(roundf(ascent * scale));
+        int scaledDescent = static_cast<int>(roundf(descent * scale));
+        int scaledLineGap = static_cast<int>(roundf(lineGap * scale));
+
+        int lsb     = static_cast<int>(roundf(glyph.lsb * scale));
+        int advance = static_cast<int>(roundf(glyph.advance * scale));
+
+        return { advance, lsb,
+                 scaledAscent,
+                 scaledDescent,
+                 scaledLineGap };
     }
 private:
     const Glyph& getGlyph(int unicode) {
@@ -69,7 +90,10 @@ private:
         }
         int glyph_index = stbtt_FindGlyphIndex(&font, unicode);
         if (glyph_index == 0) {
+            std::cout << "unable to find glyph index " << unicode << std::endl;
             glyph_index = 0;
+            static Glyph emptyGlyph{0,0,0,0,0,0,nullptr,0};
+            return emptyGlyph;
         }
         int advance, lsb;
         stbtt_GetGlyphHMetrics(&font, glyph_index, &advance, &lsb);
@@ -111,5 +135,6 @@ private:
 PYBIND11_MODULE(font_holder, m) {
     py::class_<Font>(m, "Font")
     .def(py::init<const std::string&>())
-    .def("get_raster_from_glyph", &Font::get_raster_from_glyph);
+    .def("get_raster_from_glyph", &Font::get_raster_from_glyph)
+    .def("get_render_info", &Font::get_render_info);
 }
