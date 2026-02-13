@@ -1,5 +1,5 @@
 from OpenGL.GL import *
-from Uniform_Registry import uniform_registry
+from Uniform_Registry import uniform_registry, UniformTypes
 
 class ShaderPassData:
     def __init__(self,frag_shader, vert_shader):
@@ -34,12 +34,11 @@ class ShaderPassData:
     def assign_info_map(self):
         self.info_map = glGenTextures(1)
         
-    def set_uniform(self, name, reference):
-        loc = glGetUniformLocation(self.program, name)
-        glUniform1i(loc, reference)
+    def set_uniform(self, name, program):
+        uniform_registry.set_uniform(name, program)
         
-    def set_atlas(self):
-        self.set_uniform("uAtlas", 1)
+    def set_atlas(self, name, program):
+        self.set_uniform(name, program)
     
 class NotATextureError(Exception):
     pass
@@ -51,14 +50,16 @@ def set_glActiveTexture(name: str):
     glActiveTexture(GL_TEXTURE0 + texture_binding)
 
 class Texture:
-    def __init__(self, image):
+    def __init__(self, image, name):
+        self.name = name
+        uniform_registry.register_uniform(self.name, UniformTypes.Texture)
         self.texture = glGenTextures(1)
-        self.bind_texture(0)
+        self.bind_texture()
         self.set_data()
         self.upload(image)
 
-    def bind_texture(self, unit=0):
-        glActiveTexture(GL_TEXTURE0 + unit + 1)
+    def bind_texture(self):
+        set_glActiveTexture(self.name)
         glBindTexture(GL_TEXTURE_2D, self.texture)
 
     def set_data(self):
@@ -87,5 +88,5 @@ class Texture:
         )
 
     def resend(self, image):
-        self.bind_texture(0)
+        self.bind_texture()
         self.upload(image)

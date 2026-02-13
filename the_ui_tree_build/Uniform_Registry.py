@@ -6,7 +6,7 @@ class RegisterError(Exception):
 
 class UniformTypes(Enum):
     Texture = auto(),
-    Int = auto(),
+    UInt = auto(),
 
 class Uniform:
     def __init__(self, uniform_type):

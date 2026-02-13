@@ -148,7 +148,7 @@ class GSGRenderSystem(QOpenGLWidget):
         
         self.init_textures(height, width)
         
-        self.atlas_texture = Texture(self.texture_atlas)
+        self.atlas_texture = Texture(self.texture_atlas,"uAtlas")
         
         self.init_SSBOs()
         time_finish = time_start - time.time()
@@ -213,7 +213,7 @@ class GSGRenderSystem(QOpenGLWidget):
         glViewport(0, 0, self.width(), self.height())
         
         glUseProgram(shader_pass.program)
-        shader_pass.set_atlas()
+        shader_pass.set_atlas("uAtlas", shader_pass.program)
         glBindVertexArray(shader_pass.vao)
         
         glDrawArrays(GL_POINTS, 0, self.widget_max)
