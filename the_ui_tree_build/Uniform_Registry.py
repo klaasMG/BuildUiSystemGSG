@@ -29,7 +29,6 @@ class UniformRegistry:
         self.uniforms[name] = uniform_new
         
     def set_uniform(self, name, program):
-        print(";lfllfk")
         uniform = self.uniforms[name]
         print(uniform)
         reference = uniform.binding

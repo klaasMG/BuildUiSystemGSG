@@ -3,6 +3,8 @@ from PyQt5.QtWidgets import QOpenGLWidget
 import numpy as np
 from OpenGL.GL import *
 from enum import Enum
+
+from the_ui_tree_build.PassSystem import set_glActiveTexture
 from widget_data import WidgetDataType
 from PIL import Image
 from event_system import event_system, EventQueue, EventTypeEnum
@@ -10,6 +12,7 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTimer
 import sys
 from PassSystem import ShaderPassData, Texture
+from Uniform_Registry import uniform_registry, UniformTypes
 Image.MAX_IMAGE_PIXELS = None
 
 
@@ -103,6 +106,8 @@ class GSGRenderSystem(QOpenGLWidget):
         event = (priority, destination, event_type, event_data)
         self.render_queue.send_event(event)
         
+        uniform_registry.register_uniform("uPrevPass", UniformTypes.Texture)
+        
         glEnable(GL_PROGRAM_POINT_SIZE)
         glDisable(GL_BLEND)
         glDisable(GL_DITHER)
@@ -194,11 +199,10 @@ class GSGRenderSystem(QOpenGLWidget):
         glUseProgram(shader_pass.program)
         glBindVertexArray(shader_pass.vao)
         prev_pass_tex = self.shader_passes[ShaderPass.PASS_BASIC].texture
-        glActiveTexture(GL_TEXTURE0)
+        set_glActiveTexture("uPrevPass")
         glBindTexture(GL_TEXTURE_2D, prev_pass_tex)
+        uniform_registry.set_uniform("uPrevPass", shader_pass.program)
         # Tell the shader that 'sampler2D uPrevPass' is bound to unit 0
-        location = glGetUniformLocation(shader_pass.program, "uPrevPass")
-        glUniform1i(location, 0)
         glDrawArrays(GL_TRIANGLES, 0, 6)
         glBindVertexArray(0)
     
