@@ -10,7 +10,6 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTimer
 import sys
 from PassSystem import ShaderPassData, Texture
-
 Image.MAX_IMAGE_PIXELS = None
 
 

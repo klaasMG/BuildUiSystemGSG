@@ -46,9 +46,9 @@ class NotATextureError(Exception):
 
 def set_glActiveTexture(name: str):
     texture_binding = uniform_registry.get_binding(name)
-    if not texture_binding == -1:
+    if texture_binding == -1:
         raise NotATextureError(f"this is {name} not a texture")
-    glActiveTexture(texture_binding)
+    glActiveTexture(GL_TEXTURE0 + texture_binding)
 
 class Texture:
     def __init__(self, image):

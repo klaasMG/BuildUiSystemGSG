@@ -29,8 +29,11 @@ class UniformRegistry:
         self.uniforms[name] = uniform_new
         
     def set_uniform(self, name, program):
+        print(";lfllfk")
         uniform = self.uniforms[name]
+        print(uniform)
         reference = uniform.binding
+        print(reference)
         if reference is None:
             raise RegisterError(f"This uniform {name} is not registered")
         glUseProgram(program)
