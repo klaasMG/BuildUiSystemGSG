@@ -3,15 +3,13 @@ from PyQt5.QtWidgets import QOpenGLWidget
 import numpy as np
 from OpenGL.GL import *
 from enum import Enum
-
-from the_ui_tree_build.PassSystem import set_glActiveTexture
 from widget_data import WidgetDataType
 from PIL import Image
 from event_system import event_system, EventQueue, EventTypeEnum
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTimer
 import sys
-from PassSystem import ShaderPassData, Texture
+from PassSystem import ShaderPassData, Texture, set_glActiveTexture, TextureType
 from Uniform_Registry import uniform_registry, UniformTypes
 Image.MAX_IMAGE_PIXELS = None
 
@@ -148,7 +146,7 @@ class GSGRenderSystem(QOpenGLWidget):
         
         self.init_textures(height, width)
         
-        self.atlas_texture = Texture(self.texture_atlas,"uAtlas")
+        self.atlas_texture = Texture(self.texture_atlas,"uAtlas", TextureType.RGBA)
         
         self.init_SSBOs()
         time_finish = time_start - time.time()

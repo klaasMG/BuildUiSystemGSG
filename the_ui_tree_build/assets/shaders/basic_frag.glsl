@@ -2,6 +2,7 @@
 #include "C:/Users/klaas/PycharmProjects/BuildUiSystemGSG/the_ui_tree_build/assets/shaders/widget_builder.glsl"
 
 uniform sampler2D uAtlas;
+uniform sampler2D uFontMap;
 
 in vec2 vUV;
 flat in int vIndex;

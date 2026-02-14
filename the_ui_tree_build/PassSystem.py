@@ -1,5 +1,10 @@
 from OpenGL.GL import *
 from Uniform_Registry import uniform_registry, UniformTypes
+from enum import Enum ,auto
+
+class TextureType(Enum):
+    RGBA = auto()
+    GREY_SCALE = auto()
 
 class ShaderPassData:
     def __init__(self,frag_shader, vert_shader):
@@ -50,7 +55,8 @@ def set_glActiveTexture(name: str):
     glActiveTexture(GL_TEXTURE0 + texture_binding)
 
 class Texture:
-    def __init__(self, image, name):
+    def __init__(self, image, name, image_type):
+        self.image_type = image_type
         self.name = name
         uniform_registry.register_uniform(self.name, UniformTypes.Texture)
         self.texture = glGenTextures(1)
