@@ -21,6 +21,16 @@ target_link_libraries(event_struct PRIVATE ${Python3_LIBRARIES})
 # Output as .pyd (no "lib" prefix)
 set_target_properties(event_struct PROPERTIES PREFIX "" SUFFIX ".pyd")
 
+add_library(GridPacker SHARED the_code/GridPacker.cpp)
+
+target_link_libraries(GridPacker PRIVATE ${Python3_LIBRARIES})
+
+set_target_properties(GridPacker PROPERTIES PREFIX "" SUFFIX ".pyd")
+
+set_target_properties(GridPacker PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY
+        ${CMAKE_CURRENT_SOURCE_DIR}/the_ui_tree_build)
+
 add_library(font_holder SHARED
         the_code/font_loader.cpp
         the_code/stb_treutype.h

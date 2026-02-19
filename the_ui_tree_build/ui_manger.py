@@ -78,6 +78,7 @@ class GSGUiManager:
         self.frame_timer.start(16)  # ~60 FPS
         
         sys.exit(self.app.exec_())
+
     
     def update_ui_manager(self):
         event = self.ui_manager_queue.receive_event()
@@ -146,7 +147,7 @@ class GSGUiManager:
         self.widget_data[WidgetDataType.PARENT][widget_id] = parent if parent != -1 else self.widget_data[WidgetDataType.PARENT][widget_id]
         if data[13] == "text":
             self.widget_data[WidgetDataType.TEXT_ID][widget_id] = self.next_text_id
-            self.asset_ids[data[12]] = self.next_text_id
+            self.text_ids[data[12]] = self.next_text_id
             self.next_text_id += 1
         elif data[13] == "asset":
             self.widget_data[WidgetDataType.ASSETS_ID][widget_id] = self.next_asset_id
@@ -165,7 +166,7 @@ class GSGUiManager:
         self.widget_data[WidgetDataType.PARENT][widget_id] = parent if parent is not None else -1
         if data[13] == "text":
             self.widget_data[WidgetDataType.TEXT_ID][widget_id] = self.next_text_id
-            self.asset_ids[data[12]] = self.next_text_id
+            self.text_ids[data[12]] = self.next_text_id
             self.next_text_id += 1
         elif data[13] == "asset":
             self.widget_data[WidgetDataType.ASSETS_ID][widget_id] = self.next_asset_id

@@ -274,6 +274,7 @@
 //
 //  Incomplete text-in-3d-api example, which draws quads properly aligned to be lossless.
 //  See "tests/truetype_demo_win32.c" for a complete version.
+
 #if 0
 #define STB_TRUETYPE_IMPLEMENTATION  // force following include to generate implementation
 #include "stb_truetype.h"
@@ -473,8 +474,10 @@ int main(int arg, char **argv)
    #endif
 
    #ifndef STBTT_assert
-   #include <assert.h>
-   #define STBTT_assert(x)    assert(x)
+   #include <pybind11/pybind11.h>
+   namespace py = pybind11;
+   #define STBTT_assert(x) \
+   do { if (!(x)) throw py::value_error("STBTT_assert: " #x); } while (0)
    #endif
 
    #ifndef STBTT_strlen
