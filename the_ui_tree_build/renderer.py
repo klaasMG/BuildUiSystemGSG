@@ -1,13 +1,13 @@
 import time
-from PyQt5.QtWidgets import QOpenGLWidget
+from PySide6.QtOpenGLWidgets import QOpenGLWidget
+from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QTimer
 import numpy as np
 from OpenGL.GL import *
 from enum import Enum
 from widget_data import WidgetDataType
 from PIL import Image
 from event_system import event_system, EventQueue, EventTypeEnum
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore import QTimer
 import sys
 from PassSystem import ShaderPassData, Texture, set_glActiveTexture, TextureType
 from Uniform_Registry import uniform_registry, UniformTypes

@@ -6,11 +6,11 @@ from PassSystem import Texture, TextureType
 from PIL import Image
 from pathlib import Path
 
-ttf_path = "assets/fonts/AovelSansRounded-rdDL.ttf"
+ttf_path = Path("assets/fonts/AovelSansRounded-rdDL.ttf")
 class FontManager:
     def __init__(self):
-        self.font_map_image = Image.new("F",(8192,8912),0.0)
-        self.font_map = Texture(self.font_map_image,"uFontMap", TextureType.GREY_SCALE)
+        self.font_map_image = Image.new("L",(8192,8912),0)
+        #self.font_map = Texture(self.font_map_image,"uFontMap", TextureType.GREY_SCALE)
         self.fonts: dict[str, Font] = {}
         
         
@@ -21,9 +21,10 @@ class FontManager:
             render_info_1 = render_font.get_render_info(text_height, ord(i))
             advance = render_info_1[0]
             text_length += advance
-        text_image = Image.new("F",(text_height, 10), 0.0)
+        text_image = Image.new("L",(text_length, text_height), 0)
         for i in text:
             rendered_char, rendered_info = self.render_char(i, render_font, text_height)
+            char_image = Image.fromarray(rendered_char,"L")
         
     def add_font(self, font_name: str, font_file: Path):
         font_file = str(font_file)
@@ -45,3 +46,4 @@ class FontManager:
         return char_array, render_info
     
 f = FontManager()
+f.add_font("font",ttf_path)

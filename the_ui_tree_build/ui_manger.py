@@ -2,8 +2,8 @@ import time
 from print_wrapper import tprint
 from renderer import GSGRenderSystem
 import sys
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore import QTimer
+from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QTimer
 import numpy as np
 from widget_data import WidgetDataType
 from event_system import event_system, EventQueue, EventTypeEnum
@@ -77,7 +77,7 @@ class GSGUiManager:
         self.frame_timer.timeout.connect(self.update_ui_manager)
         self.frame_timer.start(16)  # ~60 FPS
         
-        sys.exit(self.app.exec_())
+        sys.exit(self.app.exec())
 
     
     def update_ui_manager(self):

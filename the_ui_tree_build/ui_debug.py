@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+
 config = Path("debug.json")
 try:
     with open(config, "r") as f:
