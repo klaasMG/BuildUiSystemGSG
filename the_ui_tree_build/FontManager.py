@@ -10,7 +10,7 @@ ttf_path = Path("assets/fonts/AovelSansRounded-rdDL.ttf")
 class FontManager:
     def __init__(self):
         self.font_map_image = Image.new("L",(8192,8912),0)
-        self.font_map = Texture(self.font_map_image,"uFontMap", TextureType.GREY_SCALE)
+        #self.font_map = Texture(self.font_map_image,"uFontMap", TextureType.GREY_SCALE)
         self.fonts: dict[str, Font] = {}
     
     from PIL import Image
@@ -52,7 +52,8 @@ class FontManager:
         return text_image
     
     def update_texture(self):
-        self.font_map.resend(self.font_map_image)
+        pass
+        #self.font_map.resend(self.font_map_image)
         
     def add_font(self, font_name: str, font_file: Path):
         font_file = str(font_file)
