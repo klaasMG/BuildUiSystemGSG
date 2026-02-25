@@ -1,3 +1,6 @@
-//
-// Created by klaas on 2/24/2026.
-//
+#include <iostream>
+
+int main(int argc, char** argv) {
+    std::cout << "Hello World!" << std::endl;
+    return 0;
+}

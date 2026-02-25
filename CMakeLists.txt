@@ -3,6 +3,11 @@ project(Superbuild LANGUAGES CXX)
 
 option(BUILD_CODE "Build libA" ON)
 option(BUILD_PCL "Build libB" ON)
+option(BUILD_GMAKE "Build libc" ON)
+
+if(BUILD_GMAKE)
+    add_subdirectory(GMake)
+endif()
 
 if(BUILD_CODE)
     add_subdirectory(the_code)
