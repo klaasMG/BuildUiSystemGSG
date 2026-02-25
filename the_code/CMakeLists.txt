@@ -14,7 +14,6 @@ include_directories(${Python3_INCLUDE_DIRS} ${PYBIND11_INCLUDE_DIR} the_code )
 
 # Build as a Python extension module (.pyd)
 add_library(event_struct SHARED
-
         event_struct.cpp)
 
 # Link with Python library
