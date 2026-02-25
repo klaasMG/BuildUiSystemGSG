@@ -51,8 +51,7 @@ set_target_properties(font_holder PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY
         ${CMAKE_CURRENT_SOURCE_DIR}/the_ui_tree_build)
 
-add_library(shader_preprocessing SHARED shader_preprocesing.cpp
-        TokeniserGMAKE.h)
+add_library(shader_preprocessing SHARED shader_preprocesing.cpp)
 
 target_link_libraries(shader_preprocessing PRIVATE
         ${Python3_LIBRARIES}
@@ -62,19 +61,3 @@ set_target_properties(shader_preprocessing PROPERTIES
         PREFIX ""
         SUFFIX ".pyd"
 )
-
-add_executable(shader_include_graph build_dependecy_graph.cpp
-        SimpleASTGMAKE.h
-        Tokens.h
-        GMAKE_EXEPTION.h
-        file_utils.h
-        GMakeTypes.h)
-
-set_target_properties(shader_include_graph PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY
-        ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-if(MINGW)
-    target_link_libraries(shader_include_graph PRIVATE -static-libgcc -static-libstdc++ -static)
-endif()
