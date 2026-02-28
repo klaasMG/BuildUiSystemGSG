@@ -134,37 +134,93 @@ struct token{
     TokenType type;
     std::string value;
 };
+
+struct literal_token{
+    bool sucses = false;
+    token token;
+};
+
 class Tokeniser{
 public:
-    Tokeniser(){
-        token = 0;
+    Tokeniser(const std::map<TokenType, std::string>& token_type_char_in){
+        token_pos = 0;
         text = std::string();
+        token_type_char = token_type_char_in;
     }
 
     std::vector<token> tokenize(const std::string& input_text){
         text = input_text;
-        while (text.size() < token){
-
+        std::vector<token> tokens;
+        while (text.size() < token_pos){
+            literal_token token_literal = get_literal_token();
+            if (token_literal.sucses){
+                tokens.push_back(token_literal.token);
+            }
         }
         reset_tokeniser();
         return {};
     }
+
 private:
-    uint64_t token = 0;
+    std::map<TokenType, std::string> token_type_char;
+    uint64_t token_pos = 0;
     std::string text = std::string();
     void reset_tokeniser(){
         text = std::string();
-        token = 0;
+        token_pos = 0;
     };
     char peek_token(){
-        if (token >= text.size()) return '\0';
-        return text[token];
+        if (token_pos >= text.size()) return '\0';
+        return text[token_pos];
     }
     char next_token(){
         char c = peek_token();
-        token++;
+        token_pos++;
         return c;
     }
+
+    literal_token get_literal_token(){
+        literal_token token_literal;
+        std::string literal;
+        char c = peek_token();
+        literal += c;
+        for (std::pair<TokenType, std::string> token_type : token_type_char){
+            if (literal == token_type.second){
+                next_token();
+                token_literal.sucses = true;
+                token tok = {token_type.first, ""};
+                token_literal.token = tok;
+                return token_literal;
+            }
+        }
+        char c1 = peek_token();
+        literal += c1;
+        for (std::pair<TokenType, std::string> token_type : token_type_char){
+            if (literal == token_type.second){
+                next_token();
+                token_literal.sucses = true;
+                token tok = {token_type.first, ""};
+                token_literal.token = tok;
+                return token_literal;
+            }
+        }
+        char c2 = peek_token();
+        literal += c2;
+        for (std::pair<TokenType, std::string> token_type : token_type_char){
+            if (literal == token_type.second){
+                next_token();
+                token_literal.sucses = true;
+                token tok = {token_type.first, ""};
+                token_literal.token = tok;
+                return token_literal;
+            }
+        }
+        literal_token tok_literal = literal_token();
+        tok_literal.sucses = false;
+        tok_literal.token = {};
+        return tok_literal;
+    }
+
 };
 
 #endif //SUPERBUILD_TOKENISER_H
