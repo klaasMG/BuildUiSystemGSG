@@ -2,6 +2,7 @@
 #define SUPERBUILD_TOKENISER_H
 #include <atomic>
 #include <map>
+#include <stdexcept>
 #include <string>
 #include <variant>
 #include <vector>
@@ -247,24 +248,56 @@ public:
                     char c = peek_token();
                     if (c == '\n'){
                         is_new_line = true;
-                        token tok;
-                        tok.type = TokenType::NEWLINE;
-                        tok.value = "";
-                        tokens.push_back(tok);
                     }
-                    next_token();
+                    else{
+                        next_token();
+                    }
                 }
             }
-            else if (peek_token() == '"'){
-                next_token();
+            else if (peek_token() == '"' || peek_token() == '\''){
+                char end_char = next_token();
+                uint16_t multi_line_string = 0;
+                for (int i = 0; i < 2; ++i){
+                    char check = peek_token(i);
+                    multi_line_string |= (static_cast<uint16_t>(check) << (i * 8));
+                }
+                bool is_multi_line_string = false;
+                if ((multi_line_string == '\0' + '\0') && (end_char == '\0')){
+                    is_multi_line_string = true;
+                }
+                else if ((multi_line_string == '"' + '"') && (end_char == '"')){
+                    is_multi_line_string = true;
+                }
+                else{
+                    is_multi_line_string = false;
+                }
+                if (is_multi_line_string){
+                    next_token();
+                    next_token();
+                }
                 token tok;
                 tok.type = TokenType::STRING;
                 bool is_string_end = false;
                 std::string string_literal_value = std::string();
                 while (!is_string_end && !eof()){
                     char c = peek_token();
-                    if (c == '"'){
-                        is_string_end = true;
+                    if (c == end_char){
+                        if (is_multi_line_string){
+                            char check1 = peek_token();
+                            char check2 = peek_token();
+                            if (check1 == end_char && check2 == end_char){
+                                is_string_end = true;
+                            }
+                            else{
+                                string_literal_value += c;
+                            }
+                        }
+                        else{
+                            is_string_end = true;
+                        }
+                    }
+                    else if (!is_multi_line_string && c == '\n'){
+                        throw std::runtime_error("Unterminated string");
                     }
                     else{
                         string_literal_value += c;
@@ -308,6 +341,35 @@ public:
                 tok.value = "\n";
                 next_token();
                 tokens.push_back(tok);
+                int new_indent = 0;
+                while (!eof() && (peek_token() == ' ' || peek_token() == '\t')){
+                    char c = next_token();
+                    if (c == '\t'){
+                        new_indent += 8;
+                    }
+                    else if (c == ' '){
+                        new_indent++;
+                    }
+                }
+                int last_indent = indent_stack.back();
+                if (new_indent > last_indent){
+                    indent_stack.push_back(new_indent);
+                    token indent_token;
+                    indent_token.type = TokenType::INDENT;
+                    indent_token.value = std::string();
+                    tokens.push_back(indent_token);
+                }
+                else if (new_indent < last_indent){
+                    indent_stack.pop_back();
+                    int check_indent = indent_stack.back();
+                    if (check_indent != new_indent){
+                        throw std::runtime_error("Incorrect indent number");
+                    }
+                    token dedent_token;
+                    dedent_token.type = TokenType::DEDENT;
+                    dedent_token.value = std::string();
+                    tokens.push_back(dedent_token);
+                }
             }
             else{
                 next_token();
@@ -318,7 +380,7 @@ public:
     }
 
 private:
-    std::map<TokenType, std::string> token_type_char;
+    std::vector<int> indent_stack = {0};
     uint64_t token_pos = 0;
     std::string text = std::string();
     void reset_tokeniser(){
@@ -329,6 +391,14 @@ private:
         if (token_pos >= text.size()) return '\0';
         return text[token_pos];
     }
+
+    char peek_token(int look_ahead){
+        if (token_pos >= text.size()){
+            return '\0';
+        }
+        return text[token_pos + look_ahead];
+    }
+
     char next_token(){
         char c = peek_token();
         token_pos++;
