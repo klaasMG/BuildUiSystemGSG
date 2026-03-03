@@ -309,11 +309,31 @@ public:
             }
             else if (std::isdigit(peek_token())){
                 token tok;
+                bool is_float = false;
+                bool is_put_underscore = false;
+                bool put_float = false;
                 tok.type = TokenType::NUMBER;
                 std::string number_literal_value = std::string();
-                while (std::isdigit(peek_token()) && !eof()){
+                while (std::isdigit(peek_token()) && !eof() || peek_token() == '_'){
                     char c = next_token();
+                    if (c == '_'){
+                        if (is_put_underscore || put_float){
+                            throw std::runtime_error("Unterminated number");
+                        }
+                        is_put_underscore = true;
+                        continue;
+                    }
+                    put_float = false;
+                    if (c == '.'){
+                        if (is_float){
+                            throw std::runtime_error("no two point in float allowed");
+                        }
+                        is_float = true;
+                        put_float = true;
+                    }
+                    is_put_underscore = false;
                     number_literal_value += c;
+
                 }
                 tok.value = number_literal_value;
                 tokens.push_back(tok);
