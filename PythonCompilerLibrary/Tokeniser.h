@@ -278,7 +278,7 @@ private:
         token tok;
         tok.type = TokenType::STRING;
         std::string str = std::string();
-        if (!is_multiline){
+        if (!is_multiline && !str_type.b_string){
             while (end_char == peektoken()){
                 char c = nexttoken();
                 if (c == '\\' && !str_type.r_string){
@@ -367,7 +367,7 @@ private:
                 str.push_back(c);
             }
         }
-        else{
+        else if (!str_type.b_string){
             while (!(peektoken() == end_char && peektoken(1) == end_char && peektoken(2) == end_char)){
                 char c = nexttoken();
                 if (c == '\\' && !str_type.r_string){
