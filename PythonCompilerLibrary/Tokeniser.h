@@ -6,6 +6,7 @@
 #include <variant>
 #include <vector>
 #include <map>
+#include <array>
 
 enum class KeyWord{
     FALSE,
@@ -227,12 +228,24 @@ struct literal_token{
     token token;
 };
 
+struct string_type{
+    bool f_string = false;
+    bool b_string = false;
+    bool r_string = false;
+};
+
 class Tokeniser{
 public:
     std::vector<token> tokenise(){
         std::vector<token> tokens;
         while (peektoken() != '\0'){
-
+            if (char c = peektoken();std::isalpha(c)){
+                std::string ident = ident_getter();
+                if (peektoken() == '"' || peektoken() == '\''){
+                    char end_char = nexttoken();
+                    parse_string(end_char, string_type_parser(ident), tokens);
+                }
+            }
         }
         return {};
     }
@@ -241,9 +254,239 @@ private:
     std::string Text = std::string();
     std::vector<int> IdentStack = {0};
     std::vector<char> BrackectStack = {};
-    char peektoken(){
+
+    std::string ident_getter(){
+        std::string ident = std::string();
+        while (std::isalnum(peektoken()) || peektoken() == '_'){
+            char c = nexttoken();
+            ident.push_back(c);
+        }
+        return ident;
+    }
+
+    void parse_string(char end_char, string_type str_type, std::vector<token>& tokens){
+        std::string string = std::string();
+        bool is_multiline = false;
+        if (peektoken() == end_char){
+            nexttoken();
+            if (peektoken() == end_char){
+                nexttoken();
+                is_multiline = true;
+            }
+            else{ token tok; tok.type = TokenType::STRING; tok.value = ""; }
+        }
+        token tok;
+        tok.type = TokenType::STRING;
+        std::string str = std::string();
+        if (!is_multiline){
+            while (end_char == peektoken()){
+                char c = nexttoken();
+                if (c == '\\' && !str_type.r_string){
+                    char after_slash = nexttoken();
+                    if (after_slash == '\\'){
+                        str.push_back('\\');
+                    }
+                    else if (after_slash == '"'){
+                        str.push_back('\"');
+                    }
+                    else if (after_slash == '\''){
+                        str.push_back('\'');
+                    }
+                    else if (after_slash == 'n'){
+                        str.push_back('\n');
+                    }
+                    else if (after_slash == 'r'){
+                        str.push_back('\r');
+                    }
+                    else if (after_slash == 't'){
+                        str.push_back('\t');
+                    }
+                    else if (after_slash == 'b'){
+                        str.push_back('\b');
+                    }
+                    else if (after_slash == 'f'){
+                        str.push_back('\f');
+                    }
+                    else if (after_slash == 'v'){
+                        str.push_back('\v');
+                    }
+                    else if (after_slash == 'a'){
+                        str.push_back('\a');
+                    }
+                    // Octal: \0 to \077 (1–3 digits)
+                    else if (after_slash >= '0' && after_slash <= '7'){
+                    int value = after_slash - '0';
+                    for (int i = 1; i < 3; ++i){
+                    char next = peektoken();
+                    if (next >= '0' && next <= '7'){
+                        value = value * 8 + (next - '0');
+                        nexttoken();
+                    }
+                    else break;
+                    }
+                    str.push_back(static_cast<char>(value));
+                    }
+                    else if (after_slash == 'x'){
+                        int value = 0;
+                        for (int i = 0; i < 2; ++i){
+                            char next = nexttoken();
+                            if (next >= '0' && next <= '9') value = value*16 + (next - '0');
+                            else if (next >= 'a' && next <= 'f') value = value*16 + (next - 'a' + 10);
+                            else if (next >= 'A' && next <= 'F') value = value*16 + (next - 'A' + 10);
+                            else break; // invalid, stop early
+                    }
+                    str.push_back(static_cast<char>(value));
+                    }
+                    else if (after_slash == 'u'){
+                    int value = 0;
+                    for (int i = 0; i < 4; ++i){
+                        char next = nexttoken();
+                        if (next >= '0' && next <= '9') value = value*16 + (next - '0');
+                        else if (next >= 'a' && next <= 'f') value = value*16 + (next - 'a' + 10);
+                        else if (next >= 'A' && next <= 'F') value = value*16 + (next - 'A' + 10);
+                        else break; // invalid
+                    }
+                    str.push_back(static_cast<char>(value)); // note: only works for code points <= 255
+                    }
+                    else if (after_slash == 'U'){
+                    unsigned int value = 0;
+                    for (int i = 0; i < 8; ++i){
+                        char next = nexttoken();
+                        if (next >= '0' && next <= '9') value = value*16 + (next - '0');
+                        else if (next >= 'a' && next <= 'f') value = value*16 + (next - 'a' + 10);
+                        else if (next >= 'A' && next <= 'F') value = value*16 + (next - 'A' + 10);
+                        else break; // invalid
+                    }
+                    str.push_back(static_cast<char>(value)); // note: only works for code points <= 255
+                    }
+                    // Unknown escape: just take the char literally
+                    else{
+                        str.push_back(after_slash);
+                    }
+                }
+                str.push_back(c);
+            }
+        }
+        else{
+            while (!(peektoken() == end_char && peektoken(1) == end_char && peektoken(2) == end_char)){
+                char c = nexttoken();
+                if (c == '\\' && !str_type.r_string){
+                    char after_slash = nexttoken();
+                    if (after_slash == '\\'){
+                        str.push_back('\\');
+                    }
+                    else if (after_slash == '"'){
+                        str.push_back('\"');
+                    }
+                    else if (after_slash == '\''){
+                        str.push_back('\'');
+                    }
+                    else if (after_slash == 'n'){
+                        str.push_back('\n');
+                    }
+                    else if (after_slash == 'r'){
+                        str.push_back('\r');
+                    }
+                    else if (after_slash == 't'){
+                        str.push_back('\t');
+                    }
+                    else if (after_slash == 'b'){
+                        str.push_back('\b');
+                    }
+                    else if (after_slash == 'f'){
+                        str.push_back('\f');
+                    }
+                    else if (after_slash == 'v'){
+                        str.push_back('\v');
+                    }
+                    else if (after_slash == 'a'){
+                        str.push_back('\a');
+                    }
+                    // Octal: \0 to \077 (1–3 digits)
+                    else if (after_slash >= '0' && after_slash <= '7'){
+                    int value = after_slash - '0';
+                    for (int i = 1; i < 3; ++i){
+                    char next = peektoken();
+                    if (next >= '0' && next <= '7'){
+                        value = value * 8 + (next - '0');
+                        nexttoken();
+                    }
+                    else break;
+                    }
+                    str.push_back(static_cast<char>(value));
+                    }
+                    else if (after_slash == 'x'){
+                        int value = 0;
+                        for (int i = 0; i < 2; ++i){
+                            char next = nexttoken();
+                            if (next >= '0' && next <= '9') value = value*16 + (next - '0');
+                            else if (next >= 'a' && next <= 'f') value = value*16 + (next - 'a' + 10);
+                            else if (next >= 'A' && next <= 'F') value = value*16 + (next - 'A' + 10);
+                            else break; // invalid, stop early
+                    }
+                    str.push_back(static_cast<char>(value));
+                    }
+                    else if (after_slash == 'u'){
+                    int value = 0;
+                    for (int i = 0; i < 4; ++i){
+                        char next = nexttoken();
+                        if (next >= '0' && next <= '9') value = value*16 + (next - '0');
+                        else if (next >= 'a' && next <= 'f') value = value*16 + (next - 'a' + 10);
+                        else if (next >= 'A' && next <= 'F') value = value*16 + (next - 'A' + 10);
+                        else break; // invalid
+                    }
+                    str.push_back(static_cast<char>(value)); // note: only works for code points <= 255
+                    }
+                    else if (after_slash == 'U'){
+                    unsigned int value = 0;
+                    for (int i = 0; i < 8; ++i){
+                        char next = nexttoken();
+                        if (next >= '0' && next <= '9') value = value*16 + (next - '0');
+                        else if (next >= 'a' && next <= 'f') value = value*16 + (next - 'a' + 10);
+                        else if (next >= 'A' && next <= 'F') value = value*16 + (next - 'A' + 10);
+                        else break; // invalid
+                    }
+                    str.push_back(static_cast<char>(value)); // note: only works for code points <= 255
+                    }
+                    // Unknown escape: just take the char literally
+                    else{
+                        str.push_back(after_slash);
+                    }
+                }
+                str.push_back(c);
+            }
+        }
+        tok.value = str;
+        tokens.push_back(tok);
+    }
+
+    static string_type string_type_parser(const std::string& ident) {
+        string_type str_type = {};
+        if (ident.contains('f') || ident.contains('F')){
+            str_type.f_string = true;
+        }
+        if (ident.contains('b') || ident.contains('B')){
+            if (str_type.f_string){
+                throw std::runtime_error("u and b are not supported");
+            }
+            str_type.b_string = true;
+        }
+        if (ident.contains('r') || ident.contains('R')){
+            str_type.r_string = true;
+        }
+        if (!only_valid_prefix_chars(ident)){
+            throw std::runtime_error("that is illegal");
+        }
+        return str_type;
+    }
+
+    static bool only_valid_prefix_chars(const std::string& text){
+        return !text.empty() && text.find_first_not_of("RrFfBb") == std::string::npos;
+    }
+
+    char peektoken(int look_ahead = 0){
         if (Text.size() > TokenPos) return '\0';
-        char c = Text[TokenPos];
+        char c = Text[TokenPos + look_ahead];
         return c;
     }
 
