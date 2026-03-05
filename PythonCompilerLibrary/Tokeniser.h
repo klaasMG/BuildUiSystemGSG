@@ -236,7 +236,8 @@ struct string_type{
 
 class Tokeniser{
 public:
-    std::vector<token> tokenise(){
+    std::vector<token> tokenise(const std::string& text, bool f_string = false){
+        Text = text;
         std::vector<token> tokens;
         while (peektoken() != '\0'){
             if (char c = peektoken();std::isalpha(c)){
@@ -276,11 +277,35 @@ private:
             else{ token tok; tok.type = TokenType::STRING; tok.value = ""; }
         }
         token tok;
-        tok.type = TokenType::STRING;
+        if (!str_type.f_string){
+            tok.type = TokenType::STRING;
+        }
+        else{
+            tok.type = TokenType::FSTRING_START;
+            tok.value = std::string();
+            tokens.push_back(tok);
+        }
         std::string str = std::string();
         if (!is_multiline && !str_type.b_string){
             while (end_char == peektoken()){
                 char c = nexttoken();
+                if (c == '{' && str_type.f_string){
+                    token f_mid_tok;
+                    f_mid_tok.type = TokenType::FSTRING_MIDDLE;
+                    f_mid_tok.value = str;
+                    tokens.push_back(f_mid_tok);
+                    str = std::string();
+                    std::string sub_parse_fstring;
+                    while (peektoken() != '}'){
+                        char c1 = nexttoken();
+                        sub_parse_fstring.push_back(c1);
+                    }
+                    bool is_fstring = true;
+                    std::vector<token> sub_tokens = tokenise(sub_parse_fstring, is_fstring);
+                    for (const token& sub_tok : sub_tokens){
+                        tokens.push_back(sub_tok);
+                    }
+                }
                 if (c == '\\' && !str_type.r_string){
                     char after_slash = nexttoken();
                     if (after_slash == '\\'){
@@ -370,6 +395,23 @@ private:
         else if (!str_type.b_string){
             while (!(peektoken() == end_char && peektoken(1) == end_char && peektoken(2) == end_char)){
                 char c = nexttoken();
+                if (c == '{' && str_type.f_string){
+                    token f_mid_tok;
+                    f_mid_tok.type = TokenType::FSTRING_MIDDLE;
+                    f_mid_tok.value = str;
+                    tokens.push_back(f_mid_tok);
+                    str = std::string();
+                    std::string sub_parse_fstring;
+                    while (peektoken() != '}'){
+                        char c1 = nexttoken();
+                        sub_parse_fstring.push_back(c1);
+                    }
+                    bool is_fstring = true;
+                    std::vector<token> sub_tokens = tokenise(sub_parse_fstring, is_fstring);
+                    for (const token& sub_tok : sub_tokens){
+                        tokens.push_back(sub_tok);
+                    }
+                }
                 if (c == '\\' && !str_type.r_string){
                     char after_slash = nexttoken();
                     if (after_slash == '\\'){
@@ -456,8 +498,22 @@ private:
                 str.push_back(c);
             }
         }
-        tok.value = str;
-        tokens.push_back(tok);
+        if (str_type.f_string){
+            if (!str.empty()){
+                token last_fstring_mid_tok;
+                last_fstring_mid_tok.type = TokenType::FSTRING_MIDDLE;
+                last_fstring_mid_tok.value = str;
+                tokens.push_back(last_fstring_mid_tok);
+            }
+            token last_fstring_tok;
+            last_fstring_tok.type = TokenType::FSTRING_END;
+            last_fstring_tok.value = std::string();
+            tokens.push_back(last_fstring_tok);
+        }
+        else{
+            tok.value = str;
+            tokens.push_back(tok);
+        }
     }
 
     static string_type string_type_parser(const std::string& ident) {
@@ -467,7 +523,7 @@ private:
         }
         if (ident.contains('b') || ident.contains('B')){
             if (str_type.f_string){
-                throw std::runtime_error("u and b are not supported");
+                throw std::runtime_error("f and b are not supported");
             }
             str_type.b_string = true;
         }
