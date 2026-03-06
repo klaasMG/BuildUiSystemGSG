@@ -94,6 +94,7 @@ const std::map<std::string, KeyWord> keyword_char = {
 };
 
 enum class TokenType{
+    EMPTY,
     ENDMARKER,
     DEDENT,
     INDENT,
@@ -161,7 +162,37 @@ enum class TokenType{
     BYTES,
 };
 
-const std::map<TokenType, std::string> token_type_char = {
+const std::vector<std::pair<TokenType, std::string>> token_type_char = {
+
+    // 3 characters
+    {TokenType::DOUBLESTAREQUAL, "**="},
+    {TokenType::DOUBLESLASHEQUAL, "//="},
+    {TokenType::LEFTSHIFTEQUAL, "<<="},
+    {TokenType::RIGHTSHIFTEQUAL, ">>="},
+    {TokenType::ELLIPSIS, "..."},
+
+    // 2 characters
+    {TokenType::EQEQUAL, "=="},
+    {TokenType::NOTEQUAL, "!="},
+    {TokenType::LESSEQUAL, "<="},
+    {TokenType::GREATEREQUAL, ">="},
+    {TokenType::LEFTSHIFT, "<<"},
+    {TokenType::RIGHTSHIFT, ">>"},
+    {TokenType::DOUBLESTAR, "**"},
+    {TokenType::DOUBLESLASH, "//"},
+    {TokenType::PLUSEQUAL, "+="},
+    {TokenType::MINEQUAL, "-="},
+    {TokenType::STAREQUAL, "*="},
+    {TokenType::SLASHEQUAL, "/="},
+    {TokenType::PERCENTEQUAL, "%="},
+    {TokenType::AMPEREQUAL, "&="},
+    {TokenType::VBAREQUAL, "|="},
+    {TokenType::CIRCUMFLEXEQUAL, "^="},
+    {TokenType::ATEQUAL, "@="},
+    {TokenType::RARROW, "->"},
+    {TokenType::COLONEQUAL, ":="},
+
+    // 1 character
     {TokenType::SEMICOLON, ";"},
     {TokenType::COMMA, ","},
     {TokenType::COLON, ":"},
@@ -174,7 +205,6 @@ const std::map<TokenType, std::string> token_type_char = {
     {TokenType::RBRACK, "]"},
 
     {TokenType::DOT, "."},
-    {TokenType::ELLIPSIS, "..."},
 
     {TokenType::PLUS, "+"},
     {TokenType::MINUS, "-"},
@@ -190,34 +220,8 @@ const std::map<TokenType, std::string> token_type_char = {
     {TokenType::LESS, "<"},
     {TokenType::GREATER, ">"},
     {TokenType::EQUAL, "="},
-    {TokenType::EXCLAMATION, "!"},
-
-    {TokenType::EQEQUAL, "=="},
-    {TokenType::NOTEQUAL, "!="},
-    {TokenType::LESSEQUAL, "<="},
-    {TokenType::GREATEREQUAL, ">="},
-
-    {TokenType::LEFTSHIFT, "<<"},
-    {TokenType::RIGHTSHIFT, ">>"},
-    {TokenType::DOUBLESTAR, "**"},
-    {TokenType::DOUBLESLASH, "//"},
-
-    {TokenType::PLUSEQUAL, "+="},
-    {TokenType::MINEQUAL, "-="},
-    {TokenType::STAREQUAL, "*="},
-    {TokenType::SLASHEQUAL, "/="},
-    {TokenType::PERCENTEQUAL, "%="},
-    {TokenType::AMPEREQUAL, "&="},
-    {TokenType::VBAREQUAL, "|="},
-    {TokenType::CIRCUMFLEXEQUAL, "^="},
-    {TokenType::LEFTSHIFTEQUAL, "<<="},
-    {TokenType::RIGHTSHIFTEQUAL, ">>="},
-    {TokenType::DOUBLESTAREQUAL, "**="},
-    {TokenType::DOUBLESLASHEQUAL, "//="},
-    {TokenType::ATEQUAL, "@="},
-
-    {TokenType::RARROW, "->"},
-    {TokenType::COLONEQUAL, ":="},};
+    {TokenType::EXCLAMATION, "!"}
+};
 
 struct token{
     TokenType type;
@@ -247,15 +251,54 @@ public:
                     char end_char = nexttoken();
                     parse_string(end_char, string_type_parser(ident), tokens);
                 }
+                else if (KeyWord keyword = check_keyword(ident); keyword != KeyWord::EMPTY){
+                    token tok;
+                    tok.type = TokenType::KEYWORD;
+                    tok.value = keyword;
+                    tokens.push_back(tok);
+                }
+                else{
+                    token tok;
+                    tok.type = TokenType::IDENT;
+                    tok.value = ident;
+                }
+            }
+            else if (TokenType literal_token = get_literal_token_type(); literal_token != TokenType::EMPTY){
+                token tok;
+                tok.type = literal_token;
+                tok.value = std::string();
+                tokens.push_back(tok);
             }
         }
-        return {};
+        return tokens;
     }
 private:
     uint64_t TokenPos = 0;
     std::string Text = std::string();
     std::vector<int> IdentStack = {0};
     std::vector<char> BrackectStack = {};
+
+    TokenType get_literal_token_type(){
+        for (const auto& [type, text] : token_type_char){
+            bool match = true;
+
+            for (size_t i = 0; i < text.size(); ++i){
+                if (peektoken(i) != text[i]){
+                    match = false;
+                    break;
+                }
+            }
+
+            if (match){
+                for (size_t i = 0; i < text.size(); ++i){
+                    nexttoken();
+                }
+                return type;
+            }
+        }
+
+        return TokenType::EMPTY;
+    }
 
     std::string ident_getter(){
         std::string ident = std::string();
@@ -264,6 +307,15 @@ private:
             ident.push_back(c);
         }
         return ident;
+    }
+
+    KeyWord static check_keyword(const std::string& keyword){
+        for (std::pair<std::string, KeyWord> key : keyword_char){
+            if (key.first == keyword){
+                return key.second;
+            }
+        }
+        return KeyWord::EMPTY;
     }
 
     void parse_string(char end_char, string_type str_type, std::vector<token>& tokens){
