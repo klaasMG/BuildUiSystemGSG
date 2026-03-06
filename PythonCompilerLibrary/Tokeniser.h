@@ -7,6 +7,8 @@
 #include <vector>
 #include <map>
 #include <array>
+#include <bits/valarray_after.h>
+#include <cmath>
 
 enum class KeyWord{
     FALSE,
@@ -264,10 +266,26 @@ public:
                 }
             }
             else if (TokenType literal_token = get_literal_token_type(); literal_token != TokenType::EMPTY){
-                token tok;
-                tok.type = literal_token;
-                tok.value = std::string();
-                tokens.push_back(tok);
+                if (literal_token == TokenType::DOT){
+                    char num_check = peektoken();
+                    if (std::isdigit(num_check)){
+                        std::string number = parse_number();
+                        token tok;
+                        tok.type = TokenType::NUMBER;
+                        tok.value = number;
+                    }
+                    else{
+                        token tok;
+                        tok.type = TokenType::DOT;
+                        tok.value = std::string();
+                    }
+                }
+                else{
+                    token tok;
+                    tok.type = literal_token;
+                    tok.value = std::string();
+                    tokens.push_back(tok);
+                }
             }
         }
         return tokens;
@@ -277,6 +295,51 @@ private:
     std::string Text = std::string();
     std::vector<int> IdentStack = {0};
     std::vector<char> BrackectStack = {};
+
+    std::string parse_number(bool is_float_in = false, bool is_after_e_in = false){
+        bool is_float = is_float_in;
+        bool is_after_e = is_after_e_in;
+        std::string number = std::string();
+        std::string exponent;
+        while (std::isdigit(peektoken()) || peektoken() == '.' || peektoken() == 'e' || peektoken() == 'E' || peektoken() == '_' || (peektoken() == '-' && is_after_e)){
+            char c = nexttoken();
+            if (c == '.'){
+                if (is_float){
+                    throw std::invalid_argument("Two dots in a number");
+                }
+                is_float = true;
+                number.push_back(c);
+            }
+            else if (c == 'e' || c == 'E'){
+                exponent = parse_number(false,true);
+                break;
+            }
+            else{
+                number.push_back(c);
+            }
+        }
+
+        bool is_last_dash = false;
+        for (const char& c : number){
+            if (c == '_'){
+                if (is_last_dash){
+                    throw std::invalid_argument("Invalid number");
+                }
+                is_last_dash = true;
+            }
+        }
+        if (number.ends_with("_") || number.starts_with('_')){
+            throw std::invalid_argument("Invalid number");
+        }
+        if (!exponent.empty()){
+            double exp = atof(exponent.c_str());
+            double num = atof(number.c_str());
+            float result = std::pow(num, exp);
+            number = std::to_string(result);
+        }
+
+        return number;
+    }
 
     TokenType get_literal_token_type(){
         for (const auto& [type, text] : token_type_char){
