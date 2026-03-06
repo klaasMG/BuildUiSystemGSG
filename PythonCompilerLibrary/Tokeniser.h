@@ -158,6 +158,7 @@ enum class TokenType{
     NL,
     TYPE_IGNORE,
     SOFT_KEYWORD,
+    BYTES,
 };
 
 const std::map<TokenType, std::string> token_type_char = {
@@ -216,7 +217,7 @@ const std::map<TokenType, std::string> token_type_char = {
     {TokenType::ATEQUAL, "@="},
 
     {TokenType::RARROW, "->"},
-    {TokenType::COLONEQUAL, ":="}};
+    {TokenType::COLONEQUAL, ":="},};
 
 struct token{
     TokenType type;
@@ -277,8 +278,11 @@ private:
             else{ token tok; tok.type = TokenType::STRING; tok.value = ""; }
         }
         token tok;
-        if (!str_type.f_string){
+        if (!str_type.f_string && !str_type.b_string){
             tok.type = TokenType::STRING;
+        }
+        else if (!str_type.f_string){
+            tok.type = TokenType::BYTES;
         }
         else{
             tok.type = TokenType::FSTRING_START;
@@ -286,10 +290,59 @@ private:
             tokens.push_back(tok);
         }
         std::string str = std::string();
-        if (!is_multiline && !str_type.b_string){
+        if (!is_multiline){
             while (end_char == peektoken()){
                 char c = nexttoken();
-                if (c == '{' && str_type.f_string){
+                if (str_type.b_string){
+                    if (!str_type.r_string && c == '\\') {
+                        char after = nexttoken();
+
+                        if (after == '\\') str.push_back('\\');
+                        else if (after == '"') str.push_back('"');
+                        else if (after == '\'') str.push_back('\'');
+                        else if (after == 'n') str.push_back('\n');
+                        else if (after == 'r') str.push_back('\r');
+                        else if (after == 't') str.push_back('\t');
+                        else if (after == 'b') str.push_back('\b');
+                        else if (after == 'f') str.push_back('\f');
+                        else if (after == 'v') str.push_back('\v');
+                        else if (after == 'a') str.push_back('\a');
+
+                        else if (after >= '0' && after <= '7') { // octal
+                            int val = after - '0';
+                            for (int i = 0; i < 2; ++i) {
+                                char p = peektoken();
+                                if (p >= '0' && p <= '7') {
+                                    val = val * 8 + (p - '0');
+                                    nexttoken();
+                                } else break;
+                            }
+                            str.push_back(static_cast<char>(val));
+                        }
+
+                        else if (after == 'x') { // hex
+                            int val = 0;
+                            for (int i = 0; i < 2; ++i) {
+                                char h = nexttoken();
+                                if (h >= '0' && h <= '9') val = val * 16 + (h - '0');
+                                else if (h >= 'a' && h <= 'f') val = val * 16 + (h - 'a' + 10);
+                                else if (h >= 'A' && h <= 'F') val = val * 16 + (h - 'A' + 10);
+                                else throw std::runtime_error("Invalid hex escape");
+                            }
+                            str.push_back(static_cast<char>(val));
+                        }
+
+                        else
+                            throw std::runtime_error("Invalid escape in b-string");
+                    }
+                    else {
+                        if ((unsigned char)c > 127)
+                            throw std::runtime_error("Non-ASCII in b-string");
+                        str.push_back(c);
+                    }
+
+                }
+                if (c == '{' && str_type.f_string && !str_type.b_string){
                     token f_mid_tok;
                     f_mid_tok.type = TokenType::FSTRING_MIDDLE;
                     f_mid_tok.value = str;
@@ -306,7 +359,7 @@ private:
                         tokens.push_back(sub_tok);
                     }
                 }
-                if (c == '\\' && !str_type.r_string){
+                if (c == '\\' && !str_type.r_string && !str_type.b_string){
                     char after_slash = nexttoken();
                     if (after_slash == '\\'){
                         str.push_back('\\');
@@ -391,11 +444,61 @@ private:
                 }
                 str.push_back(c);
             }
+            nexttoken();
         }
-        else if (!str_type.b_string){
+        else{
             while (!(peektoken() == end_char && peektoken(1) == end_char && peektoken(2) == end_char)){
                 char c = nexttoken();
-                if (c == '{' && str_type.f_string){
+                if (str_type.b_string){
+                    if (!str_type.r_string && c == '\\') {
+                        char after = nexttoken();
+
+                        if (after == '\\') str.push_back('\\');
+                        else if (after == '"') str.push_back('"');
+                        else if (after == '\'') str.push_back('\'');
+                        else if (after == 'n') str.push_back('\n');
+                        else if (after == 'r') str.push_back('\r');
+                        else if (after == 't') str.push_back('\t');
+                        else if (after == 'b') str.push_back('\b');
+                        else if (after == 'f') str.push_back('\f');
+                        else if (after == 'v') str.push_back('\v');
+                        else if (after == 'a') str.push_back('\a');
+
+                        else if (after >= '0' && after <= '7') { // octal
+                            int val = after - '0';
+                            for (int i = 0; i < 2; ++i) {
+                                char p = peektoken();
+                                if (p >= '0' && p <= '7') {
+                                    val = val * 8 + (p - '0');
+                                    nexttoken();
+                                } else break;
+                            }
+                            str.push_back(static_cast<char>(val));
+                        }
+
+                        else if (after == 'x') { // hex
+                            int val = 0;
+                            for (int i = 0; i < 2; ++i) {
+                                char h = nexttoken();
+                                if (h >= '0' && h <= '9') val = val * 16 + (h - '0');
+                                else if (h >= 'a' && h <= 'f') val = val * 16 + (h - 'a' + 10);
+                                else if (h >= 'A' && h <= 'F') val = val * 16 + (h - 'A' + 10);
+                                else throw std::runtime_error("Invalid hex escape");
+                            }
+                            str.push_back(static_cast<char>(val));
+                        }
+
+                        else
+                            throw std::runtime_error("Invalid escape in b-string");
+                    }
+                    else {
+                        if ((unsigned char)c > 127)
+                            throw std::runtime_error("Non-ASCII in b-string");
+                        str.push_back(c);
+                    }
+
+                }
+                if (c == '{' && str_type.f_string && !str_type.b_string){
                     token f_mid_tok;
                     f_mid_tok.type = TokenType::FSTRING_MIDDLE;
                     f_mid_tok.value = str;
@@ -412,7 +515,7 @@ private:
                         tokens.push_back(sub_tok);
                     }
                 }
-                if (c == '\\' && !str_type.r_string){
+                if (c == '\\' && !str_type.r_string && !str_type.b_string){
                     char after_slash = nexttoken();
                     if (after_slash == '\\'){
                         str.push_back('\\');
@@ -497,6 +600,9 @@ private:
                 }
                 str.push_back(c);
             }
+            nexttoken();
+            nexttoken();
+            nexttoken();
         }
         if (str_type.f_string){
             if (!str.empty()){
