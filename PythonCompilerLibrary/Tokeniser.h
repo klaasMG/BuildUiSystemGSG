@@ -152,15 +152,10 @@ enum class TokenType{
     STRING,
     KEYWORD,
     IDENT,
-    COMMENT,
-    TYPE_COMMENT,
     FSTRING_START,
     FSTRING_MIDDLE,
     FSTRING_END,
     NEWLINE,
-    NL,
-    TYPE_IGNORE,
-    SOFT_KEYWORD,
     BYTES,
 };
 
@@ -315,7 +310,21 @@ public:
                 string_type str_type;
                 parse_string( end_char, str_type, tokens);
             }
+            else if (isdigit(peektoken())){
+                std::string number = parse_number();
+                token tok;
+                tok.type = TokenType::NUMBER;
+                tok.value = number;
+            }
+            else if (peektoken() == '#'){
+                while (peektoken() != '\n' || peektoken() == '\0'){
+                    nexttoken();
+                }
+            }
         }
+        token tok;
+        tok.type = TokenType::ENDMARKER;
+        tok.value = std::string();
         return tokens;
     }
 private:
@@ -839,7 +848,7 @@ private:
         Text = std::string();
         TokenPos = 0;
         IdentStack = {0};
-        BracketDepth = {};
+        BracketDepth = 0;
     }
 };
 
