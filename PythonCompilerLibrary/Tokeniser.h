@@ -7,7 +7,6 @@
 #include <vector>
 #include <map>
 #include <array>
-#include <bits/valarray_after.h>
 #include <cmath>
 
 enum class KeyWord{
