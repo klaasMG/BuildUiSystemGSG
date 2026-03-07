@@ -279,6 +279,20 @@ public:
                         tok.value = std::string();
                     }
                 }
+                else if (literal_token == TokenType::LBRACE || literal_token == TokenType::LBRACK || literal_token == TokenType::LPAREN){
+                    BracketDepth++;
+                    token tok;
+                    tok.type = literal_token;
+                    tok.value = std::string();
+                    tokens.push_back(tok);
+                }
+                else if (literal_token == TokenType::RBRACE || literal_token == TokenType::RBRACK || literal_token == TokenType::RPAREN){
+                    BracketDepth--;
+                    token tok;
+                    tok.type = literal_token;
+                    tok.value = std::string();
+                    tokens.push_back(tok);
+                }
                 else{
                     token tok;
                     tok.type = literal_token;
@@ -286,14 +300,63 @@ public:
                     tokens.push_back(tok);
                 }
             }
+            else if (peektoken() == '\n'){
+                if (!BracketDepth){
+                    token tok;
+                    tok.type = TokenType::NEWLINE;
+                    tok.value = std::string();
+                    tokens.push_back(tok);
+                }
+                nexttoken();
+                tokens = parse_indent(tokens);
+            }
+            else if (char end_char = peektoken(); end_char == '"' || end_char == '\''){
+                nexttoken();
+                string_type str_type;
+                parse_string( end_char, str_type, tokens);
+            }
         }
         return tokens;
     }
 private:
     uint64_t TokenPos = 0;
     std::string Text = std::string();
-    std::vector<int> IdentStack = {0};
-    std::vector<char> BrackectStack = {};
+    std::vector<uint64_t> IdentStack = {0};
+    uint64_t BracketDepth = 0;
+
+    std::vector<token> parse_indent(std::vector<token> tokens){
+        uint64_t indent = 0;
+        while (peektoken() == ' ' || peektoken() == '\t'){
+            char c = nexttoken();
+            if (c == '\t'){
+                int tab_width = 8;
+                indent += tab_width;
+            }
+            else{
+                int space_width = 1;
+                indent += space_width;
+            }
+        }
+        if (indent > IdentStack.back()){
+            IdentStack.push_back(indent);
+            token tok;
+            tok.type = TokenType::INDENT;
+            tok.value = std::string();
+            tokens.push_back(tok);
+        }
+        else if (indent < IdentStack.back()){
+            IdentStack.pop_back();
+            uint64_t check_indent = IdentStack.back();
+            if (check_indent != indent){
+                throw std::invalid_argument("Indent does not match indentation");
+            }
+            token tok;
+            tok.type = TokenType::DEDENT;
+            tok.value = std::string();
+            tokens.push_back(tok);
+        }
+        return tokens;
+    }
 
     std::string parse_number(bool is_float_in = false, bool is_after_e_in = false){
         bool is_float = is_float_in;
@@ -776,7 +839,7 @@ private:
         Text = std::string();
         TokenPos = 0;
         IdentStack = {0};
-        BrackectStack = {};
+        BracketDepth = {};
     }
 };
 
