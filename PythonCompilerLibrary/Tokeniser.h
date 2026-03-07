@@ -267,8 +267,7 @@ public:
             }
             else if (TokenType literal_token = get_literal_token_type(); literal_token != TokenType::EMPTY){
                 if (literal_token == TokenType::DOT){
-                    char num_check = peektoken();
-                    if (std::isdigit(num_check)){
+                    if (char num_check = peektoken(); std::isdigit(num_check)){
                         std::string number = parse_number();
                         token tok;
                         tok.type = TokenType::NUMBER;
