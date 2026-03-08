@@ -4,6 +4,7 @@
 
 #ifndef SUPERBUILD_AST_H
 #define SUPERBUILD_AST_H
+#include <variant>
 
 struct NumberNode;
 struct StringNode;
@@ -22,5 +23,6 @@ struct ForNode;
 struct MatchNode;
 struct TryNode;
 
+using Node = std::variant<NumberNode, StringNode, CallExprNode, ExprNode, AssignNode, FunctionNode, ClassNode, IdentNode, BinaryExprNode, UnaryExprNode, BinaryNode, IfNode, WhileNode, ForNode, MatchNode, TryNode>;
 
 #endif //SUPERBUILD_AST_H
