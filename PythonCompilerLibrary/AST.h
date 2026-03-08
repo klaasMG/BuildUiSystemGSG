@@ -1,7 +1,3 @@
-//
-// Created by klaas on 3/8/2026.
-//
-
 #ifndef SUPERBUILD_AST_H
 #define SUPERBUILD_AST_H
 #include <variant>
