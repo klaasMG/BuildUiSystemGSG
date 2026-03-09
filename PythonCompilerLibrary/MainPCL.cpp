@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include "Tokeniser.h"
-#include "AST.h"
+#include "AST_old.h"
 
 enum class token_type{
     ARG,
