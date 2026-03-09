@@ -7,4 +7,5 @@ add_executable(PCL MainPCL.cpp
         Tokeniser.h
         tokens.h
         AST_old.h
-        AST.h)
+        AST.h
+        AST.cpp)

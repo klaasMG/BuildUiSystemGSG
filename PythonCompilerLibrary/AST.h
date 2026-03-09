@@ -1,12 +1,10 @@
-//
-// Created by klaas on 3/9/2026.
-//
-
 #ifndef SUPERBUILD_AST_H
 #define SUPERBUILD_AST_H
 #include <string>
 #include <variant>
 #include <vector>
+
+#include "Tokeniser.h"
 
 enum class CollectionType{
     Dict,
@@ -56,6 +54,7 @@ struct FunctionNode{
     std::vector<size_t> args;
     size_t decorator;
     size_t body;
+    size_t return_node;
 };
 struct ClassNode{
     std::string name;
@@ -93,7 +92,44 @@ struct TryNode{
     size_t else_body;
 };
 
-using Node = std::variant<NumberNode, StringNode, BinaryNode, IdentNode, UnaryExprNode, BinaryExprNode, CallExprNode,
-                          AssignNode, CollectionNode ,ProgramNode ,FunctionNode,ClassNode ,IfNode ,WhileNode ,ForNode ,CaseNode ,MatchNode ,TryNode >;
+struct WithNode{
+    size_t function;
+    size_t allias;
+    size_t body;
+};
 
+struct ImportNode{
+    size_t import;
+    size_t alias;
+    size_t from;
+};
+
+struct FStringNode{
+    std::vector<std::variant<size_t, std::string>> values;
+};
+
+struct BreakNode{};
+
+struct ContinueNode{};
+
+struct AssertNode {
+    size_t test;
+    size_t msg;
+};
+
+using Node = std::variant<NumberNode, StringNode, BinaryNode, IdentNode, UnaryExprNode, BinaryExprNode, CallExprNode,
+                          AssignNode, CollectionNode ,ProgramNode ,FunctionNode,ClassNode ,IfNode ,WhileNode ,ForNode ,CaseNode ,MatchNode ,TryNode, WithNode, ImportNode, FStringNode, BreakNode,
+                          ContinueNode, AssertNode>;
+
+class Parser{
+public:
+    Parser();
+    std::vector<Node> parse_ast(const std::vector<token>& tokens);
+private:
+    std::vector<token> Tokens;
+    uint64_t TokenPos;
+    void reset_parser();
+    token get_token();
+    token peek_token();
+};
 #endif //SUPERBUILD_AST_H
