@@ -51,14 +51,47 @@ struct CollectionNode{
 struct ProgramNode{
     std::vector<size_t> lines;
 };
-struct FunctionNode;
-struct ClassNode;
-struct IfNode;
-struct WhileNode;
-struct ForNode;
-struct CaseNode;
-struct MatchNode;
-struct TryNode;
+struct FunctionNode{
+    std::string name;
+    std::vector<size_t> args;
+    size_t decorator;
+    size_t body;
+};
+struct ClassNode{
+    std::string name;
+    std::vector<size_t> args;
+    size_t body;
+};
+struct IfNode{
+    size_t condition;
+    size_t if_body;
+    size_t else_body;
+};
+struct WhileNode{
+    size_t condition;
+    size_t while_body;
+    size_t else_body;
+};
+struct ForNode{
+    size_t condition;
+    size_t for_body;
+    size_t else_body;
+};
+struct CaseNode{
+    size_t patern;
+    size_t guard;
+    size_t body;
+};
+struct MatchNode{
+    std::vector<size_t> cases;
+};
+struct TryNode{
+    size_t try_body;
+    size_t except_condition;
+    size_t except_body;
+    size_t finally_body;
+    size_t else_body;
+};
 
 using Node = std::variant<NumberNode, StringNode, BinaryNode, IdentNode, UnaryExprNode, BinaryExprNode, CallExprNode,
                           AssignNode, CollectionNode ,ProgramNode ,FunctionNode,ClassNode ,IfNode ,WhileNode ,ForNode ,CaseNode ,MatchNode ,TryNode >;
