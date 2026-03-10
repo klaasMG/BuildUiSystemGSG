@@ -8,6 +8,8 @@
 #include <map>
 #include <array>
 #include <cmath>
+#include <stdexcept>
+
 #include "tokens.h"
 
 struct token{
@@ -110,6 +112,19 @@ public:
                 while (peektoken() != '\n' || peektoken() == '\0'){
                     nexttoken();
                 }
+            }
+            else if (peektoken() == '\t' || peektoken() == ' ') {
+                nexttoken();
+            }
+            else if (peektoken() == '\\'){
+                while (peektoken() == '\n' || peektoken() == '\0'){
+                    if (peektoken() != ' ' || peektoken() == '\t') {
+                        throw std::invalid_argument("Escape character expected");
+                    }
+                }
+            }
+            else{
+                throw std::invalid_argument("Unexpected token");
             }
         }
         token tok;

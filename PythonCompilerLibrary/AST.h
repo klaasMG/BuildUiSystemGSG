@@ -117,9 +117,13 @@ struct AssertNode {
     size_t msg;
 };
 
+struct AnnotationNode{
+    size_t annotation;
+};
+
 using Node = std::variant<NumberNode, StringNode, BinaryNode, IdentNode, UnaryExprNode, BinaryExprNode, CallExprNode,
                           AssignNode, CollectionNode ,ProgramNode ,FunctionNode,ClassNode ,IfNode ,WhileNode ,ForNode ,CaseNode ,MatchNode ,TryNode, WithNode, ImportNode, FStringNode, BreakNode,
-                          ContinueNode, AssertNode>;
+                          ContinueNode, AssertNode, AnnotationNode>;
 
 class Parser{
 public:
