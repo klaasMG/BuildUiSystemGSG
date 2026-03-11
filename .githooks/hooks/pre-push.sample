@@ -21,7 +21,7 @@
 
 remote="$1"
 url="$2"
-
+echo "ran there"
 zero=$(git hash-object --stdin </dev/null | tr '[0-9a-f]' '0')
 
 while read local_ref local_oid remote_ref remote_oid
