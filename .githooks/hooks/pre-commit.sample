@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo "hook ran"
+echo "ran"
 # repo root
 repo_root=$(git rev-parse --show-toplevel)
 
