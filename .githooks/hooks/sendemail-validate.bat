@@ -13,7 +13,7 @@
 # validation (successful or not) of the last patch of a series, the worktree
 # will be deleted.
 #
-# The following config variables can be set to change the default remote and
+# The following config variables can be set
 # remote ref that are used to apply the patches against:
 #
 #   sendemail.validateRemote (default: origin)
