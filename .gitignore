@@ -10,3 +10,4 @@ shader_include_graph.exe
 /the_ui_tree_build/assets/preprocessed_shaders
 /the_code/config.json
 .gitignore
+/public_mirror_repository's
