@@ -6,7 +6,7 @@
 # To enable this hook, rename this file to "update".
 #
 # Config
-# ------
+# ------ ""
 # hooks.allowunannotated
 #   This boolean sets whether unannotated tags will be allowed into the
 #   repository.  By default they won't be.
