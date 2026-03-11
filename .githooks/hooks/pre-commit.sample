@@ -8,7 +8,7 @@ branch=$(git rev-parse --abbrev-ref HEAD)
 
 # run python script if committing to master
 if [ "$branch" = "master" ]; then
-    python "$repo_root/Users/klaas/PycharmProjects/BuildUiSystemGSG/tooling/miror/MirorMain.py"
+    python /c/Users/klaas/PycharmProjects/BuildUiSystemGSG/tooling/miror/MirorMain.py
 fi
 
 
