@@ -11,3 +11,4 @@ shader_include_graph.exe
 /the_code/config.json
 .gitignore
 /public_mirror_repository's
+.env

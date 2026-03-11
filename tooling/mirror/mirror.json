@@ -1,7 +1,7 @@
 {
     "projects": {
         "Gmake": {
-            "project_root": "GMake"
+            "project_root": "/../../GMake"
         }
     }
 }
