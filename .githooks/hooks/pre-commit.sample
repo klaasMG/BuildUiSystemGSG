@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo "ran"
+echo "ran there"
 # repo root
 repo_root=$(git rev-parse --show-toplevel)
 
