@@ -23,10 +23,18 @@ def resolve_back(path_str: str, base: Path = Path(__file__).parent) -> Path:
             path = path / part
     return path.resolve()
 
-
-def get_project_root(project: str) -> str:
-    return mirror_projects[project]["project_root"]
-
+def set_remote_repo(git_user, project, private: bool):
+    # get repo if it exists, otherwise create it
+    try:
+        repo_remote = git_user.get_repo(project)
+    except:
+        repo_remote = git_user.create_repo(project, private=private)
+    
+    url = repo_remote.clone_url.replace(
+        "https://",
+        f"https://{GITHUB_TOKEN}@"
+    )
+    return url
 
 def copy_project():
     for project in mirror_projects:
@@ -44,17 +52,10 @@ def copy_project():
             Repo.init(mirror_repo_base_use)
 
         git_user = github_client.get_user()
+        
+        is_public = mirror_projects[project]["repo-public"]
 
-        # get repo if it exists, otherwise create it
-        try:
-            repo_remote = git_user.get_repo(project)
-        except:
-            repo_remote = git_user.create_repo(project)
-
-        url = repo_remote.clone_url.replace(
-            "https://",
-            f"https://{GITHUB_TOKEN}@"
-        )
+        url = set_remote_repo(git_user, project ,is_public)
 
         repo = Repo(mirror_repo_base_use)
 
