@@ -12,3 +12,4 @@ shader_include_graph.exe
 .gitignore
 /public_mirror_repository's
 .env
+.ENV
