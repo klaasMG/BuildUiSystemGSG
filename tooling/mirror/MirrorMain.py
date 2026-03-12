@@ -13,13 +13,6 @@ github_client = Github(auth=Auth.Token(GITHUB_TOKEN))
 base_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(base_dir)
 
-mirror_repo_base = Path(__file__).parent.parent.parent
-mirror_repo_base = Path(mirror_repo_base) / Path("public_mirror_repository's")
-
-json_file = open("mirror.json", "r")
-mirror_repo = json.load(json_file)
-mirror_projects = mirror_repo["projects"]
-
 
 def resolve_back(path_str: str, base: Path = Path(__file__).parent) -> Path:
     path = base
@@ -85,4 +78,10 @@ def main():
 
 
 if __name__ == "__main__":
+    mirror_repo_base = Path(__file__).parent.parent.parent
+    mirror_repo_base = Path(mirror_repo_base) / Path("public_mirror_repository's")
+    
+    json_file = open("mirror.json", "r")
+    mirror_repo = json.load(json_file)
+    mirror_projects = mirror_repo["projects"]
     main()
