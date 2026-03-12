@@ -36,10 +36,29 @@ def set_remote_repo(git_user, project, private: bool):
     )
     return url
 
+def push_to_repo(url, mirror_repo_base_use):
+    repo = Repo(mirror_repo_base_use)
+    
+    if repo.is_dirty(untracked_files=True):
+        repo.git.add(".")
+        repo.index.commit("commit")
+    
+    # ensure remote exists
+    if "origin" not in [r.name for r in repo.remotes]:
+        origin = repo.create_remote("origin", url)
+    else:
+        origin = repo.remotes.origin
+        origin.set_url(url)
+    
+    branch = repo.active_branch.name
+    origin.push(refspec=f"{branch}:{branch}")
+
 def copy_project():
     for project in mirror_projects:
         proj_root_path = resolve_back(mirror_projects[project]["project_root"])
-
+        proj_root_path = Path(proj_root_path)
+        proj_root_path = mirror_base / proj_root_path.name
+        
         mirror_repo_base_use = Path(mirror_repo_base) / Path(project)
         mirror_repo_base_use_src = Path(mirror_repo_base_use) / Path(project)
 
@@ -56,33 +75,19 @@ def copy_project():
         is_public = mirror_projects[project]["repo-public"]
 
         url = set_remote_repo(git_user, project ,is_public)
-
-        repo = Repo(mirror_repo_base_use)
-
-        if repo.is_dirty(untracked_files=True):
-            repo.git.add(".")
-            repo.index.commit("commit")
-
-        # ensure remote exists
-        if "origin" not in [r.name for r in repo.remotes]:
-            origin = repo.create_remote("origin", url)
-        else:
-            origin = repo.remotes.origin
-            origin.set_url(url)
-
-        branch = repo.active_branch.name
-        origin.push(refspec=f"{branch}:{branch}")
-
+        
+        push_to_repo(url, mirror_repo_base_use)
 
 def main():
     copy_project()
 
-
 if __name__ == "__main__":
     mirror_repo_base = Path(__file__).parent.parent.parent
     mirror_repo_base = Path(mirror_repo_base) / Path("public_mirror_repository's")
-    
     json_file = open("mirror.json", "r")
     mirror_repo = json.load(json_file)
     mirror_projects = mirror_repo["projects"]
+    mirror_base = mirror_repo["base"]
+    mirror_base = resolve_back(mirror_base, Path(__file__).parent)
+    mirror_base = Path(mirror_base)
     main()
