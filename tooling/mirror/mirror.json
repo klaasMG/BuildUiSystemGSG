@@ -4,6 +4,10 @@
         "Gmake": {
             "project_root": "/GMake",
             "repo-public": true
+        },
+        "PythonCompilerLibrary": {
+            "project_root": "/PythonCompilerLibrary",
+            "repo-public": true
         }
     }
 }

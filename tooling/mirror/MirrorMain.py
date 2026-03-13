@@ -28,7 +28,8 @@ def set_remote_repo(git_user, project, private: bool):
     try:
         repo_remote = git_user.get_repo(project)
     except:
-        repo_remote = git_user.create_repo(project, private=private)
+        public = not private
+        repo_remote = git_user.create_repo(project, private=public)
     
     url = repo_remote.clone_url.replace(
         "https://",
@@ -61,7 +62,7 @@ def copy_project():
         
         mirror_repo_base_use = Path(mirror_repo_base) / Path(project)
         mirror_repo_base_use_src = Path(mirror_repo_base_use) / Path(project)
-
+        
         if mirror_repo_base_use_src.exists():
             shutil.rmtree(mirror_repo_base_use_src)
 
@@ -82,12 +83,11 @@ def main():
     copy_project()
 
 if __name__ == "__main__":
-    mirror_repo_base = Path(__file__).parent.parent.parent
-    mirror_repo_base = Path(mirror_repo_base) / Path("public_mirror_repository's")
     json_file = open("mirror.json", "r")
     mirror_repo = json.load(json_file)
     mirror_projects = mirror_repo["projects"]
     mirror_base = mirror_repo["base"]
     mirror_base = resolve_back(mirror_base, Path(__file__).parent)
     mirror_base = Path(mirror_base)
+    mirror_repo_base = Path(mirror_base) / Path("public_mirror_repository's")
     main()

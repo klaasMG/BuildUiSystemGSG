@@ -29,3 +29,7 @@ token Parser::peek_token(){
     token tok = Tokens[TokenPos];
     return tok;
 }
+
+Node Parser::keyword_to_node(const token keyword){
+
+}

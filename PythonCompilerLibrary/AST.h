@@ -135,5 +135,6 @@ private:
     void reset_parser();
     token get_token();
     token peek_token();
+    Node keyword_to_node(token keyword);
 };
 #endif //SUPERBUILD_AST_H
