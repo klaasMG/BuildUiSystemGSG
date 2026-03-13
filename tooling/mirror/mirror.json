@@ -1,5 +1,6 @@
 {
     "base": "/../..",
+    "mirror-dir": "public_mirror_repository's",
     "projects": {
         "Gmake": {
             "project_root": "/GMake",
