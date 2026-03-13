@@ -53,6 +53,9 @@ def push_to_repo(url, mirror_repo_base_use):
     
     branch = repo.active_branch.name
     origin.push(refspec=f"{branch}:{branch}")
+    
+def change_gitignore_paths():
+    pass
 
 def copy_project():
     for project in mirror_projects:
