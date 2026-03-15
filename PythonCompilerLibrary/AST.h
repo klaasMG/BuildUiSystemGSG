@@ -39,7 +39,7 @@ struct CallExprNode{
     std::vector<size_t> args;
 };
 struct AssignNode{
-    std::string asinged;
+    size_t identifier;
     size_t value;
 };
 struct CollectionNode{
@@ -117,24 +117,31 @@ struct AssertNode {
     size_t msg;
 };
 
+struct BoolNode{
+    bool boolean;
+};
+
 struct AnnotationNode{
     size_t annotation;
 };
 
 using Node = std::variant<NumberNode, StringNode, BinaryNode, IdentNode, UnaryExprNode, BinaryExprNode, CallExprNode,
                           AssignNode, CollectionNode ,ProgramNode ,FunctionNode,ClassNode ,IfNode ,WhileNode ,ForNode ,CaseNode ,MatchNode ,TryNode, WithNode, ImportNode, FStringNode, BreakNode,
-                          ContinueNode, AssertNode, AnnotationNode>;
+                          ContinueNode, AssertNode, AnnotationNode, BoolNode>;
 
 class Parser{
 public:
     Parser();
-    std::vector<Node> parse_ast(const std::vector<token>& tokens);
+    std::vector<Node> program_parse_ast(const std::vector<token>& tokens);
+    Node parse_factor();
 private:
+    uint64_t IndentLevel;
     std::vector<token> Tokens;
     uint64_t TokenPos;
     void reset_parser();
     token get_token();
     token peek_token();
-    Node keyword_to_node(token keyword);
+    bool match_token(const TokenType& type);
+    void expect_token(TokenType type);
 };
 #endif //SUPERBUILD_AST_H

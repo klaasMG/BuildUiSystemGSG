@@ -50,6 +50,7 @@ public:
                     token tok;
                     tok.type = TokenType::IDENT;
                     tok.value = ident;
+                    tokens.push_back(tok);
                 }
             }
             else if (TokenType literal_token = get_literal_token_type(); literal_token != TokenType::EMPTY){
@@ -59,11 +60,13 @@ public:
                         token tok;
                         tok.type = TokenType::NUMBER;
                         tok.value = number;
+                        tokens.push_back(tok);
                     }
                     else{
                         token tok;
                         tok.type = TokenType::DOT;
                         tok.value = std::string();
+                        tokens.push_back(tok);
                     }
                 }
                 else if (literal_token == TokenType::LBRACE || literal_token == TokenType::LBRACK || literal_token == TokenType::LPAREN){
@@ -107,9 +110,10 @@ public:
                 token tok;
                 tok.type = TokenType::NUMBER;
                 tok.value = number;
+                tokens.push_back(tok);
             }
             else if (peektoken() == '#'){
-                while (peektoken() != '\n' || peektoken() == '\0'){
+                while (peektoken() != '\n' || peektoken() != '\0'){
                     nexttoken();
                 }
             }
@@ -117,8 +121,8 @@ public:
                 nexttoken();
             }
             else if (peektoken() == '\\'){
-                while (peektoken() == '\n' || peektoken() == '\0'){
-                    if (peektoken() != ' ' || peektoken() == '\t') {
+                while (peektoken() != '\n' || peektoken() != '\0'){
+                    if (peektoken() != ' ' || peektoken() != '\t') {
                         throw std::invalid_argument("Escape character expected");
                     }
                 }
@@ -130,12 +134,14 @@ public:
         token tok;
         tok.type = TokenType::ENDMARKER;
         tok.value = std::string();
+        tokens.push_back(tok);
         return tokens;
     }
+
 private:
     uint64_t TokenPos = 0;
     std::string Text = std::string();
-    std::vector<uint64_t> IdentStack = {0};
+    std::vector<uint64_t> IndentStack = {0};
     uint64_t BracketDepth = 0;
 
     std::vector<token> parse_indent(std::vector<token> tokens){
@@ -151,23 +157,26 @@ private:
                 indent += space_width;
             }
         }
-        if (indent > IdentStack.back()){
-            IdentStack.push_back(indent);
+        if (indent > IndentStack.back()){
+            IndentStack.push_back(indent);
             token tok;
             tok.type = TokenType::INDENT;
             tok.value = std::string();
             tokens.push_back(tok);
         }
-        else if (indent < IdentStack.back()){
-            IdentStack.pop_back();
-            uint64_t check_indent = IdentStack.back();
-            if (check_indent != indent){
+        else if (indent < IndentStack.back()){
+            while (indent < IndentStack.back()){
+                IndentStack.pop_back();
+
+                token tok;
+                tok.type = TokenType::DEDENT;
+                tok.value = std::string();
+                tokens.push_back(tok);
+            }
+
+            if (IndentStack.back() != indent){
                 throw std::invalid_argument("Indent does not match indentation");
             }
-            token tok;
-            tok.type = TokenType::DEDENT;
-            tok.value = std::string();
-            tokens.push_back(tok);
         }
         return tokens;
     }
@@ -210,7 +219,8 @@ private:
         if (!exponent.empty()){
             double exp = atof(exponent.c_str());
             double num = atof(number.c_str());
-            float result = std::pow(num, exp);
+            float result = std::pow(10, exp);
+            result = result * num;
             number = std::to_string(result);
         }
 
@@ -282,7 +292,7 @@ private:
         }
         std::string str = std::string();
         if (!is_multiline){
-            while (end_char == peektoken()){
+            while (end_char != peektoken()){
                 char c = nexttoken();
                 if (str_type.b_string){
                     if (!str_type.r_string && c == '\\') {
@@ -638,7 +648,7 @@ private:
     }
 
     char peektoken(int look_ahead = 0){
-        if (Text.size() > TokenPos) return '\0';
+        if (Text.size() <= TokenPos + look_ahead) return '\0';
         char c = Text[TokenPos + look_ahead];
         return c;
     }
@@ -652,7 +662,7 @@ private:
     void reset_tokeniser(){
         Text = std::string();
         TokenPos = 0;
-        IdentStack = {0};
+        IndentStack = {0};
         BracketDepth = 0;
     }
 };

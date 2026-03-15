@@ -1,7 +1,3 @@
-//
-// Created by klaas on 3/8/2026.
-//
-
 #ifndef SUPERBUILD_TOKENS_H
 #define SUPERBUILD_TOKENS_H
 
