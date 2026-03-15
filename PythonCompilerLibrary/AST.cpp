@@ -327,6 +327,7 @@ size_t Parser::parse_factor(){
             std::vector<size_t> collected;
             while (TokenType::COMMA == peek_token().type || TokenType::COLON != peek_token().type){
                 token comma_or_colon = get_token();
+
                 if (tok.type == TokenType::COLON){
                     is_dict = true;
                 }
