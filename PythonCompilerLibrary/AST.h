@@ -36,13 +36,23 @@ struct BinaryExprNode{
 };
 struct CallExprNode{
     bool is_await;
-    std::string name;
+    size_t name;
     std::vector<size_t> args;
 };
 struct AssignNode{
     size_t identifier;
     size_t value;
+    size_t annotation;
 };
+
+struct ArgNode{
+    size_t identifier;
+    size_t default_value;
+    size_t annotation;
+    bool is_args = false;
+    bool is_kwargs = false;
+};
+
 struct CollectionNode{
     CollectionType type;
     std::vector<size_t> values;
@@ -54,6 +64,7 @@ struct FunctionNode{
     bool is_await;
     std::string name;
     std::vector<size_t> args;
+    size_t annotation;
     size_t decorator;
     size_t body;
     size_t return_node;
@@ -62,6 +73,7 @@ struct ClassNode{
     std::string name;
     std::vector<size_t> args;
     size_t body;
+    size_t annotation;
 };
 struct IfNode{
     size_t condition;
@@ -131,7 +143,7 @@ using ExprNode = std::variant<BinaryExprNode, UnaryExprNode>;
 
 using Node = std::variant<NumberNode, StringNode, BinaryNode, IdentNode, UnaryExprNode, BinaryExprNode, CallExprNode,
                           AssignNode, CollectionNode ,ProgramNode ,FunctionNode,ClassNode ,IfNode ,WhileNode ,ForNode ,CaseNode ,MatchNode ,TryNode, WithNode, ImportNode, FStringNode, BreakNode,
-                          ContinueNode, AssertNode, AnnotationNode, BoolNode>;
+                          ContinueNode, AssertNode, AnnotationNode, BoolNode, ArgNode>;
 
 class Parser{
 public:

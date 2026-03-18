@@ -273,7 +273,79 @@ size_t Parser::parse_factor(){
     size_t expr_node = -1;
     Node factor;
     token tok = get_token();
-    if (tok.type == TokenType::NUMBER){
+
+    // 1. Parentheses (tightest precedence)
+    if (tok.type == TokenType::LPAREN) {
+        size_t first_expr = parse_expression();
+        if (peek_token().type == TokenType::COMMA) {
+            CollectionNode tuple{.type = CollectionType::Tuple};
+            std::vector<size_t> values;
+            values.push_back(first_expr);
+            while (peek_token().type == TokenType::COMMA) {
+                get_token();
+                values.push_back(parse_expression());
+            }
+            if (peek_token().type != TokenType::RPAREN)
+                throw std::runtime_error("Expected closing parenthesis");
+            get_token();
+            tuple.values = values;
+            factor = tuple;
+        } else {
+            if (peek_token().type != TokenType::RPAREN)
+                throw std::runtime_error("Expected closing parenthesis");
+            get_token();
+            expr_node = first_expr;
+        }
+    }
+    // 2. Collections
+    else if (tok.type == TokenType::LBRACE || tok.type == TokenType::LBRACK) {
+        CollectionNode collection{};
+        std::vector<size_t> collected;
+        bool is_dict = false;
+        TokenType end = (tok.type == TokenType::LBRACE) ? TokenType::RBRACE : TokenType::RBRACK;
+
+        if (peek_token().type == end) {
+            get_token(); // consume empty collection
+            collection.type = (tok.type == TokenType::LBRACE) ? CollectionType::Dict : CollectionType::List;
+        } else {
+            size_t first = parse_expression();
+            if (tok.type == TokenType::LBRACE && peek_token().type == TokenType::COLON) {
+                is_dict = true;
+                get_token();
+                collected.push_back(first);
+                collected.push_back(parse_expression());
+            } else {
+                collected.push_back(first);
+            }
+
+            while (peek_token().type == TokenType::COMMA) {
+                get_token();
+                if (peek_token().type == end) break;
+                size_t key = parse_expression();
+                if (is_dict) {
+                    if (peek_token().type != TokenType::COLON)
+                        throw std::runtime_error("Expected ':' in dict");
+                    get_token();
+                    collected.push_back(key);
+                    collected.push_back(parse_expression());
+                } else {
+                    collected.push_back(key);
+                }
+            }
+
+            if (peek_token().type != end)
+                throw std::runtime_error("Expected closing bracket");
+            get_token();
+            if (tok.type == TokenType::LBRACE)
+                collection.type = is_dict ? CollectionType::Dict : CollectionType::Set;
+            else
+                collection.type = CollectionType::List;
+
+            collection.values = collected;
+        }
+        factor = collection;
+    }
+    else if (tok.type == TokenType::NUMBER){
         NumberNode number{.number = std::stof(std::get<std::string>(tok.value))};
         factor = number;
     }
@@ -294,54 +366,76 @@ size_t Parser::parse_factor(){
         BoolNode boolean{.boolean = bool_value};
         factor = boolean;
     }
-    else if (tok.type == TokenType::LBRACE || tok.type == TokenType::LBRACK || tok.type == TokenType::LPAREN){
-        if (tok.type == TokenType::LPAREN){
-            size_t expr = parse_expression();
-            if (TokenType::COMMA == get_token().type){
-                CollectionNode collection = {.type = CollectionType::Tuple, .values = {}};
-                std::vector<size_t> collected;
-                collected.push_back(expr);
-                while (TokenType::COMMA == peek_token().type){
-                    get_token();
-                    collected.push_back(parse_expression());
-                }
-                if (TokenType::RPAREN != peek_token().type){
-                    throw std::runtime_error("parentheses are not allowed");
-                }
-                collection.values = collected;
-                factor = collection;
-            }
-            else{
-                expr_node = parse_expression();
+    else if (tok.type == TokenType::IDENT){
+        Node ident_res;
+        std::string ident = std::get<std::string>(tok.value);
+        size_t annotations = -1;
+        size_t expression = -1;
+        bool is_assign = true;
+        if (peek_token().type == TokenType::COLON){
+            get_token();
+            annotations = parse_expression();
+            if (peek_token().type == TokenType::EQUAL){
+                expression = parse_expression();
             }
         }
-        else{
-            CollectionNode collection = {};
-            TokenType end_brack = tok.type;
-            CollectionType collection_type;
-            bool is_dict = false;
-            if (tok.type == TokenType::LBRACE){}
-            else{
-                collection_type = CollectionType::List;
-            }
-            std::vector<size_t> collected;
-            while (TokenType::COMMA == peek_token().type || TokenType::COLON != peek_token().type){
-                token comma_or_colon = get_token();
-
-                if (tok.type == TokenType::COLON){
-                    is_dict = true;
+        else if (peek_token().type == TokenType::EQUAL){
+            expression = parse_expression();
+        }
+        else if (peek_token().type == TokenType::LPAREN){
+            is_assign = false;
+            std::vector<size_t> args = {};
+            bool default_happend = false;
+            bool arg_happend = false;
+            bool kwarg_happend = false;
+            while (peek_token().type == TokenType::COMMA){
+                ArgNode argument = {};
+                token arg_first = get_token();
+                IdentNode ident_node = {.ident = std::get<std::string>(arg_first.value)};
+                size_t ident_size_t = push_node(ident_node);
+                size_t annotations_expr = -1;
+                if (peek_token().type == TokenType::COLON){
+                    annotations_expr = parse_expression();
                 }
-                collected.push_back(parse_expression());
+                size_t expression_arg = -1;
+                if (peek_token().type == TokenType::EQUAL){
+                    default_happend = true;
+                    expression_arg = parse_expression();
+                }
+                else if (peek_token().type == TokenType::STAR){
+                    get_token();
+                    if ((peek_token().type == TokenType::STAR)){
+                        get_token();
+                        if (!(std::get<std::string>(peek_token().value) == "kwarg" && peek_token().type == TokenType::IDENT)){
+                            throw std::runtime_error("Expected kwarg");
+                        }
+                        kwarg_happend = true;
+                        argument.is_kwargs = true;
+                    }
+                    else if (peek_token().type == TokenType::IDENT && std::get<std::string>(peek_token().value) == "arg"){
+                        arg_happend = true;
+                        argument.is_args = true;
+                    }
+                    else{
+                        throw std::runtime_error("Expected kwarg");
+                    }
+                }
+                argument.annotation = annotations_expr;
+                argument.default_value = expression_arg;
+                argument.identifier = ident_size_t;
+                size_t arg = push_node(argument);
+                args.push_back(arg);
             }
-            if (is_dict == false){
-                collection_type = CollectionType::Set;
-            }
-            else{
-                collection_type = CollectionType::Dict;
-            }
-            collection.values = collected;
-            collection.type = collection_type;
-            factor = collection;
+            IdentNode func_name = {.ident = ident};
+            size_t func_identifier = push_node(func_name);
+            CallExprNode call_expr_node = {.is_await = false, .name = func_identifier, .args = args};
+            factor = call_expr_node;
+        }
+        if (is_assign){
+            IdentNode ident_node = {.ident = ident};
+            size_t identifier = push_node(ident_node);
+            AssignNode assign = {.identifier = identifier, .value = expression, .annotation = annotations};
+            factor = assign;
         }
     }
     else{

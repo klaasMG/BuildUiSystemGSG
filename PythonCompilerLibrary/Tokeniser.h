@@ -34,7 +34,7 @@ public:
         Text = text;
         std::vector<token> tokens;
         while (peektoken() != '\0'){
-            if (char c = peektoken();std::isalpha(c)){
+            if (char c = peektoken();std::isalpha(c) || c == '_'){
                 std::string ident = ident_getter();
                 if (peektoken() == '"' || peektoken() == '\''){
                     char end_char = nexttoken();
@@ -83,6 +83,10 @@ public:
                     tok.value = std::string();
                     tokens.push_back(tok);
                 }
+                else if (literal_token == TokenType::COLON && f_string == true){
+                    throw std::runtime_error("not implemented yet");
+                    //@TODO: implement this part later
+                }
                 else{
                     token tok;
                     tok.type = literal_token;
@@ -123,12 +127,12 @@ public:
             else if (peektoken() == '\\'){
                 while (peektoken() != '\n' || peektoken() != '\0'){
                     if (peektoken() != ' ' || peektoken() != '\t') {
-                        throw std::invalid_argument("Escape character expected");
+                        throw std::runtime_error("Escape character expected");
                     }
                 }
             }
             else{
-                throw std::invalid_argument("Unexpected token");
+                throw std::runtime_error("Unexpected token");
             }
         }
         token tok;
@@ -175,7 +179,7 @@ private:
             }
 
             if (IndentStack.back() != indent){
-                throw std::invalid_argument("Indent does not match indentation");
+                throw std::runtime_error("Indent does not match indentation");
             }
         }
         return tokens;
@@ -190,7 +194,7 @@ private:
             char c = nexttoken();
             if (c == '.'){
                 if (is_float){
-                    throw std::invalid_argument("Two dots in a number");
+                    throw std::runtime_error("Two dots in a number");
                 }
                 is_float = true;
                 number.push_back(c);
@@ -208,13 +212,13 @@ private:
         for (const char& c : number){
             if (c == '_'){
                 if (is_last_dash){
-                    throw std::invalid_argument("Invalid number");
+                    throw std::runtime_error("Invalid number");
                 }
                 is_last_dash = true;
             }
         }
         if (number.ends_with("_") || number.starts_with('_')){
-            throw std::invalid_argument("Invalid number");
+            throw std::runtime_error("Invalid number");
         }
         if (!exponent.empty()){
             double exp = atof(exponent.c_str());
