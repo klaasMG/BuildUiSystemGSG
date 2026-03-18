@@ -1,5 +1,6 @@
 #include "AST.h"
 #include <algorithm>
+const size_t INVALID = std::numeric_limits<size_t>::max();
 
 bool keyword_check(const token& token, const KeyWord& keyword){
     if (token.type != TokenType::KEYWORD){
@@ -39,7 +40,7 @@ size_t Parser::parse_expression(){
 }
 
 size_t Parser::parse_keyword_or(){
-    size_t exp_node = -1;
+    size_t exp_node = INVALID;
     size_t left = parse_keyword_and();
     token tok = {};
     while (peek_token().type != TokenType::EMPTY && keyword_check(peek_token(), KeyWord::OR)){
@@ -55,14 +56,14 @@ size_t Parser::parse_keyword_or(){
         BinaryExprNode expr = {.opp = operator_str, .left = left, .right = parse_keyword_and()};
         exp_node = push_node(expr);
     }
-    if (exp_node == -1){
+    if (exp_node == INVALID){
         exp_node = left;
     }
     return exp_node;
 }
 
 size_t Parser::parse_keyword_and(){
-    size_t exp_node = -1;
+    size_t exp_node = INVALID;
     size_t left = parse_comparison();
     token tok = {};
     while (peek_token().type != TokenType::EMPTY && keyword_check(peek_token(), KeyWord::AND)){
@@ -78,14 +79,14 @@ size_t Parser::parse_keyword_and(){
         BinaryExprNode expr = {.opp = operator_str, .left = left, .right = parse_comparison()};
         exp_node = push_node(expr);
     }
-    if (exp_node == -1){
+    if (exp_node == INVALID){
         exp_node = left;
     }
     return exp_node;
 }
 
 size_t Parser::parse_comparison(){
-    size_t exp_node = -1;
+    size_t exp_node = INVALID;
     size_t left = parse_or();
     token tok = {};
     while ((peek_token().type != TokenType::EMPTY) && (peek_token().type == TokenType::GREATER || peek_token().type == TokenType::LESS || peek_token().type == TokenType::LESSEQUAL
@@ -103,14 +104,14 @@ size_t Parser::parse_comparison(){
         BinaryExprNode expr = {.opp = operator_str, .left = left, .right = parse_or()};
         exp_node = push_node(expr);
     }
-    if (exp_node == -1){
+    if (exp_node == INVALID){
         exp_node = left;
     }
     return exp_node;
 }
 
 size_t Parser::parse_or(){
-    size_t exp_node = -1;
+    size_t exp_node = INVALID;
     size_t left = parse_xor();
     token tok = {};
     while ((peek_token().type != TokenType::EMPTY) && (peek_token().type == TokenType::VBAR)){
@@ -126,14 +127,14 @@ size_t Parser::parse_or(){
         BinaryExprNode expr = {.opp = operator_str, .left = left, .right = parse_xor()};
         exp_node = push_node(expr);
     }
-    if (exp_node == -1){
+    if (exp_node == INVALID){
         exp_node = left;
     }
     return exp_node;
 }
 
 size_t Parser::parse_xor(){
-    size_t exp_node = -1;
+    size_t exp_node = INVALID;
     size_t left = parse_and();
     token tok = {};
     while ((peek_token().type != TokenType::EMPTY) && peek_token().type == TokenType::CIRCUMFLEX){
@@ -149,14 +150,14 @@ size_t Parser::parse_xor(){
         BinaryExprNode expr = {.opp = operator_str, .left = left, .right = parse_and()};
         exp_node = push_node(expr);
     }
-    if (exp_node == -1){
+    if (exp_node == INVALID){
         exp_node = left;
     }
     return exp_node;
 }
 
 size_t Parser::parse_and(){
-    size_t exp_node = -1;
+    size_t exp_node = INVALID;
     size_t left = parse_shift();
     token tok = {};
     while ((peek_token().type != TokenType::EMPTY) && peek_token().type == TokenType::AMPER){
@@ -172,14 +173,14 @@ size_t Parser::parse_and(){
         BinaryExprNode expr = {.opp = operator_str, .left = left, .right = parse_shift()};
         exp_node = push_node(expr);
     }
-    if (exp_node == -1){
+    if (exp_node == INVALID){
         exp_node = left;
     }
     return exp_node;
 }
 
 size_t Parser::parse_shift(){
-    size_t exp_node = -1;
+    size_t exp_node = INVALID;
     size_t left = parse_addsub();
     token tok = {};
     while ((peek_token().type != TokenType::EMPTY) && (peek_token().type == TokenType::LEFTSHIFT || peek_token().type == TokenType::RIGHTSHIFT)){
@@ -195,14 +196,14 @@ size_t Parser::parse_shift(){
         BinaryExprNode expr = {.opp = operator_str, .left = left, .right = parse_addsub()};
         exp_node = push_node(expr);
     }
-    if (exp_node == -1){
+    if (exp_node == INVALID){
         exp_node = left;
     }
     return exp_node;
 }
 
 size_t Parser::parse_addsub(){
-    size_t exp_node = -1;
+    size_t exp_node = INVALID;
     size_t left = parse_muldiv();
     token tok = {};
     while ((peek_token().type != TokenType::EMPTY) && (peek_token().type == TokenType::PLUS || peek_token().type == TokenType::MINUS)){
@@ -218,14 +219,14 @@ size_t Parser::parse_addsub(){
         BinaryExprNode expr = {.opp = operator_str, .left = left, .right = parse_muldiv()};
         exp_node = push_node(expr);
     }
-    if (exp_node == -1){
+    if (exp_node == INVALID){
         exp_node = left;
     }
     return exp_node;
 }
 
 size_t Parser::parse_muldiv(){
-    size_t exp_node = -1;
+    size_t exp_node = INVALID;
     size_t left = parse_exponent();
     token tok = {};
     while ((peek_token().type != TokenType::EMPTY) && (peek_token().type == TokenType::AT || peek_token().type == TokenType::STAR ||
@@ -242,7 +243,7 @@ size_t Parser::parse_muldiv(){
         BinaryExprNode expr = {.opp = operator_str, .left = left, .right = parse_exponent()};
         exp_node = push_node(expr);
     }
-    if (exp_node == -1){
+    if (exp_node == INVALID){
         exp_node = left;
     }
     return exp_node;
@@ -270,7 +271,7 @@ size_t Parser::parse_exponent(){
 }
 
 size_t Parser::parse_factor(){
-    size_t expr_node = -1;
+    size_t expr_node = INVALID;
     Node factor;
     token tok = get_token();
 
@@ -369,35 +370,25 @@ size_t Parser::parse_factor(){
     else if (tok.type == TokenType::IDENT){
         Node ident_res;
         std::string ident = std::get<std::string>(tok.value);
-        size_t annotations = -1;
-        size_t expression = -1;
-        bool is_assign = true;
-        if (peek_token().type == TokenType::COLON){
+        size_t annotations = INVALID;
+        size_t expression = INVALID;
+        if (peek_token().type == TokenType::LPAREN){
             get_token();
-            annotations = parse_expression();
-            if (peek_token().type == TokenType::EQUAL){
-                expression = parse_expression();
-            }
-        }
-        else if (peek_token().type == TokenType::EQUAL){
-            expression = parse_expression();
-        }
-        else if (peek_token().type == TokenType::LPAREN){
-            is_assign = false;
             std::vector<size_t> args = {};
             bool default_happend = false;
             bool arg_happend = false;
             bool kwarg_happend = false;
-            while (peek_token().type == TokenType::COMMA){
+            if (peek_token().type != TokenType::RPAREN){
+                get_token();
                 ArgNode argument = {};
                 token arg_first = get_token();
                 IdentNode ident_node = {.ident = std::get<std::string>(arg_first.value)};
                 size_t ident_size_t = push_node(ident_node);
-                size_t annotations_expr = -1;
+                size_t annotations_expr = INVALID;
                 if (peek_token().type == TokenType::COLON){
                     annotations_expr = parse_expression();
                 }
-                size_t expression_arg = -1;
+                size_t expression_arg = INVALID;
                 if (peek_token().type == TokenType::EQUAL){
                     default_happend = true;
                     expression_arg = parse_expression();
@@ -425,25 +416,59 @@ size_t Parser::parse_factor(){
                 argument.identifier = ident_size_t;
                 size_t arg = push_node(argument);
                 args.push_back(arg);
+                while (peek_token().type == TokenType::COMMA){
+                    get_token();
+                    ArgNode argument_inner = {};
+                    token arg_first_inner = get_token();
+                    IdentNode ident_node_inner = {.ident = std::get<std::string>(arg_first_inner.value)};
+                    size_t ident_size_t_inner = push_node(ident_node);
+                    size_t annotations_expr_inner = INVALID;
+                    if (peek_token().type == TokenType::COLON){
+                        annotations_expr_inner = parse_expression();
+                    }
+                    size_t expression_arg_inner = INVALID;
+                    if (peek_token().type == TokenType::EQUAL){
+                        default_happend = true;
+                        expression_arg_inner = parse_expression();
+                    }
+                    else if (peek_token().type == TokenType::STAR){
+                        get_token();
+                        if ((peek_token().type == TokenType::STAR)){
+                            get_token();
+                            if (!(std::get<std::string>(peek_token().value) == "kwarg" && peek_token().type == TokenType::IDENT)){
+                                throw std::runtime_error("Expected kwarg");
+                            }
+                            kwarg_happend = true;
+                            argument_inner.is_kwargs = true;
+                        }
+                        else if (peek_token().type == TokenType::IDENT && std::get<std::string>(peek_token().value) == "arg"){
+                            arg_happend = true;
+                            argument_inner.is_args = true;
+                        }
+                        else{
+                            throw std::runtime_error("Expected kwarg");
+                        }
+                    }
+                    argument_inner.annotation = annotations_expr_inner;
+                    argument_inner.default_value = expression_arg_inner;
+                    argument_inner.identifier = ident_size_t_inner;
+                    size_t arg = push_node(argument_inner);
+                    args.push_back(arg);
+                }
             }
             IdentNode func_name = {.ident = ident};
             size_t func_identifier = push_node(func_name);
             CallExprNode call_expr_node = {.is_await = false, .name = func_identifier, .args = args};
             factor = call_expr_node;
         }
-        if (is_assign){
-            IdentNode ident_node = {.ident = ident};
-            size_t identifier = push_node(ident_node);
-            AssignNode assign = {.identifier = identifier, .value = expression, .annotation = annotations};
-            factor = assign;
-        }
+        get_token();
     }
     else{
 
         //@TODO: all the other ones we do still need here in the future
     }
     size_t node_index = 0;
-    if (expr_node != -1){
+    if (expr_node != INVALID){
         node_index = expr_node;
     }
     else{
@@ -466,7 +491,7 @@ token Parser::get_token(){
 
 token Parser::peek_token(const int& look_ahead){
     token tok;
-    if (TokenPos  + look_ahead > Tokens.size()){
+    if (TokenPos  + look_ahead >= Tokens.size()){
         tok = {.type = TokenType::EMPTY, .value = ""};
     }
     else{
