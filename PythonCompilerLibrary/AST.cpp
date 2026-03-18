@@ -93,13 +93,60 @@ size_t Parser::parse_comparison(){
             || peek_token().type == TokenType::GREATEREQUAL || peek_token().type == TokenType::NOTEQUAL || peek_token().type == TokenType::EQEQUAL ||
             keyword_check(peek_token(),KeyWord::IS) || (keyword_check(peek_token(), KeyWord::NOT) && keyword_check(peek_token(1),KeyWord::IN)) || keyword_check(peek_token(), KeyWord::IN))){
         token operator_node = get_token();
-        TokenType operator_token = operator_node.type;
-        auto it = std::find_if(token_type_char.begin(), token_type_char.end(),[&](const auto& pair){ return pair.first == operator_token; });
         std::string operator_str;
-        if (it != token_type_char.end()) {
-            operator_str = it->second;  // <-- dereference iterator
-        } else {
-            throw std::runtime_error("that's just not a thing");
+        if (keyword_check(operator_node, KeyWord::IS) || keyword_check(operator_node, KeyWord::NOT)){
+            if (keyword_check(peek_token(), KeyWord::NOT) && keyword_check(operator_node, KeyWord::IS)){
+                TokenType operator_token = operator_node.type;
+                auto it = std::find_if(token_type_char.begin(), token_type_char.end(),[&](const auto& pair){ return pair.first == operator_token; });
+                if (it != token_type_char.end()) {
+                    operator_str = it->second;  // <-- dereference iterator
+                } else {
+                    throw std::runtime_error("that's just not a thing");
+                }
+                TokenType operator_token2 = operator_node.type;
+                auto it2 = std::find_if(token_type_char.begin(), token_type_char.end(),[&](const auto& pair){ return pair.first == operator_token; });
+                if (it2 != token_type_char.end()) {
+                    std::string operator_str2 = it2->second;  // <-- dereference iterator
+                    operator_str += operator_str2;
+                } else {
+                    throw std::runtime_error("that's just not a thing");
+                }
+            }
+            else if (keyword_check(peek_token(), KeyWord::IN) && keyword_check(operator_node, KeyWord::NOT)){
+                TokenType operator_token = operator_node.type;
+                auto it = std::find_if(token_type_char.begin(), token_type_char.end(),[&](const auto& pair){ return pair.first == operator_token; });
+                if (it != token_type_char.end()) {
+                    operator_str = it->second;  // <-- dereference iterator
+                } else {
+                    throw std::runtime_error("that's just not a thing");
+                }
+                TokenType operator_token2 = operator_node.type;
+                auto it2 = std::find_if(token_type_char.begin(), token_type_char.end(),[&](const auto& pair){ return pair.first == operator_token; });
+                if (it2 != token_type_char.end()) {
+                    std::string operator_str2 = it2->second;  // <-- dereference iterator
+                    operator_str += operator_str2;
+                } else {
+                    throw std::runtime_error("that's just not a thing");
+                }
+            }
+            else{
+                TokenType operator_token = operator_node.type;
+                auto it = std::find_if(token_type_char.begin(), token_type_char.end(),[&](const auto& pair){ return pair.first == operator_token; });
+                if (it != token_type_char.end()) {
+                    operator_str = it->second;  // <-- dereference iterator
+                } else {
+                    throw std::runtime_error("that's just not a thing");
+                }
+            }
+        }
+        else{
+            TokenType operator_token = operator_node.type;
+            auto it = std::find_if(token_type_char.begin(), token_type_char.end(),[&](const auto& pair){ return pair.first == operator_token; });
+            if (it != token_type_char.end()) {
+                operator_str = it->second;  // <-- dereference iterator
+            } else {
+                throw std::runtime_error("that's just not a thing");
+            }
         }
         BinaryExprNode expr = {.opp = operator_str, .left = left, .right = parse_or()};
         exp_node = push_node(expr);
@@ -452,8 +499,8 @@ size_t Parser::parse_factor(){
                     argument_inner.annotation = annotations_expr_inner;
                     argument_inner.default_value = expression_arg_inner;
                     argument_inner.identifier = ident_size_t_inner;
-                    size_t arg = push_node(argument_inner);
-                    args.push_back(arg);
+                    size_t arg_inner = push_node(argument_inner);
+                    args.push_back(arg_inner);
                 }
             }
             IdentNode func_name = {.ident = ident};
