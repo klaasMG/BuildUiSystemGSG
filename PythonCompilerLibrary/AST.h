@@ -14,7 +14,7 @@ enum class CollectionType{
 };
 
 struct NumberNode{
-    float number;
+    std::variant<double , int64_t> number;
 };
 struct StringNode{
     std::string string;

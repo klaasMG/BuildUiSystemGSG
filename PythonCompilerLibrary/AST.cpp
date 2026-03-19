@@ -396,7 +396,21 @@ size_t Parser::parse_factor(){
         factor = collection;
     }
     else if (tok.type == TokenType::NUMBER){
-        NumberNode number{.number = std::stof(std::get<std::string>(tok.value))};
+        std::string str = std::get<std::string>(tok.value);
+        std::string input_string = std::string();
+        for (char i : str){
+            if (i != '_'){
+                input_string += i;
+            }
+        }
+        NumberNode number{};
+        char c = '.';
+        if (str.find(c) != std::string::npos) {
+            number.number = std::stod(input_string);
+        }
+        else{
+            number.number = std::stoi(input_string);
+        }
         factor = number;
     }
     else if (tok.type == TokenType::STRING){
