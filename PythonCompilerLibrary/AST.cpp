@@ -103,8 +103,9 @@ size_t Parser::parse_comparison(){
                 } else {
                     throw std::runtime_error("that's just not a thing");
                 }
-                TokenType operator_token2 = operator_node.type;
-                auto it2 = std::find_if(token_type_char.begin(), token_type_char.end(),[&](const auto& pair){ return pair.first == operator_token; });
+                token operator_node2 = get_token();
+                TokenType operator_token2 = operator_node2.type;
+                auto it2 = std::find_if(token_type_char.begin(), token_type_char.end(),[&](const auto& pair){ return pair.first == operator_token2; });
                 if (it2 != token_type_char.end()) {
                     std::string operator_str2 = it2->second;  // <-- dereference iterator
                     operator_str += operator_str2;
@@ -120,8 +121,9 @@ size_t Parser::parse_comparison(){
                 } else {
                     throw std::runtime_error("that's just not a thing");
                 }
-                TokenType operator_token2 = operator_node.type;
-                auto it2 = std::find_if(token_type_char.begin(), token_type_char.end(),[&](const auto& pair){ return pair.first == operator_token; });
+                token operator_node2 = get_token();
+                TokenType operator_token2 = operator_node2.type;
+                auto it2 = std::find_if(token_type_char.begin(), token_type_char.end(),[&](const auto& pair){ return pair.first == operator_token2; });
                 if (it2 != token_type_char.end()) {
                     std::string operator_str2 = it2->second;  // <-- dereference iterator
                     operator_str += operator_str2;
@@ -422,93 +424,21 @@ size_t Parser::parse_factor(){
         if (peek_token().type == TokenType::LPAREN){
             get_token();
             std::vector<size_t> args = {};
-            bool default_happend = false;
-            bool arg_happend = false;
-            bool kwarg_happend = false;
-            if (peek_token().type != TokenType::RPAREN){
-                get_token();
-                ArgNode argument = {};
-                token arg_first = get_token();
-                IdentNode ident_node = {.ident = std::get<std::string>(arg_first.value)};
-                size_t ident_size_t = push_node(ident_node);
-                size_t annotations_expr = INVALID;
-                if (peek_token().type == TokenType::COLON){
-                    annotations_expr = parse_expression();
-                }
-                size_t expression_arg = INVALID;
-                if (peek_token().type == TokenType::EQUAL){
-                    default_happend = true;
-                    expression_arg = parse_expression();
-                }
-                else if (peek_token().type == TokenType::STAR){
-                    get_token();
-                    if ((peek_token().type == TokenType::STAR)){
-                        get_token();
-                        if (!(std::get<std::string>(peek_token().value) == "kwarg" && peek_token().type == TokenType::IDENT)){
-                            throw std::runtime_error("Expected kwarg");
-                        }
-                        kwarg_happend = true;
-                        argument.is_kwargs = true;
-                    }
-                    else if (peek_token().type == TokenType::IDENT && std::get<std::string>(peek_token().value) == "arg"){
-                        arg_happend = true;
-                        argument.is_args = true;
-                    }
-                    else{
-                        throw std::runtime_error("Expected kwarg");
-                    }
-                }
-                argument.annotation = annotations_expr;
-                argument.default_value = expression_arg;
-                argument.identifier = ident_size_t;
-                size_t arg = push_node(argument);
-                args.push_back(arg);
-                while (peek_token().type == TokenType::COMMA){
-                    get_token();
-                    ArgNode argument_inner = {};
-                    token arg_first_inner = get_token();
-                    IdentNode ident_node_inner = {.ident = std::get<std::string>(arg_first_inner.value)};
-                    size_t ident_size_t_inner = push_node(ident_node);
-                    size_t annotations_expr_inner = INVALID;
-                    if (peek_token().type == TokenType::COLON){
-                        annotations_expr_inner = parse_expression();
-                    }
-                    size_t expression_arg_inner = INVALID;
-                    if (peek_token().type == TokenType::EQUAL){
-                        default_happend = true;
-                        expression_arg_inner = parse_expression();
-                    }
-                    else if (peek_token().type == TokenType::STAR){
-                        get_token();
-                        if ((peek_token().type == TokenType::STAR)){
-                            get_token();
-                            if (!(std::get<std::string>(peek_token().value) == "kwarg" && peek_token().type == TokenType::IDENT)){
-                                throw std::runtime_error("Expected kwarg");
-                            }
-                            kwarg_happend = true;
-                            argument_inner.is_kwargs = true;
-                        }
-                        else if (peek_token().type == TokenType::IDENT && std::get<std::string>(peek_token().value) == "arg"){
-                            arg_happend = true;
-                            argument_inner.is_args = true;
-                        }
-                        else{
-                            throw std::runtime_error("Expected kwarg");
-                        }
-                    }
-                    argument_inner.annotation = annotations_expr_inner;
-                    argument_inner.default_value = expression_arg_inner;
-                    argument_inner.identifier = ident_size_t_inner;
-                    size_t arg_inner = push_node(argument_inner);
-                    args.push_back(arg_inner);
+            if (peek_token().type != TokenType::RPAREN) {
+                args.push_back(parse_expression());
+
+                while (peek_token().type == TokenType::COMMA) {
+                    get_token(); // consume ','
+                    args.push_back(parse_expression());
                 }
             }
+            expect_token(TokenType::RPAREN);
             IdentNode func_name = {.ident = ident};
             size_t func_identifier = push_node(func_name);
             CallExprNode call_expr_node = {.is_await = false, .name = func_identifier, .args = args};
             factor = call_expr_node;
         }
-        get_token();
+        else if (tok.type == TokenType::LBRACE){}
     }
     else{
 
