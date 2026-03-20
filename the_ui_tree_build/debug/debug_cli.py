@@ -4,28 +4,31 @@ from enum import Enum
 
 parent_directory = Path(__file__).resolve().parent
 
+
 class DebugData(Enum):
     DebugEnabled = "debug_enabled"
     DebugFileTree = "debug_tree"
     Create = "create"
     SetDebug = "set_debug"
     Exit = "exit"
-    
+
+
 def get_debug_route(cmd_list):
-    if len(cmd_list) > 2:
+    if len(cmd_list) >= 3:
         return cmd_list[2]
     else:
-        folder = Path(__file__).parent
-        return str(folder)
-    
+        return str(parent_directory)
+
+
 def build_debug_tree(debug_root):
     file_data = {}
     for p in Path(debug_root).iterdir():
         if p.is_file():
-            file_data[p.name] = [{},None]
+            file_data[p.name] = None
         elif p.is_dir():
-            file_data[p.name] = [{},build_debug_tree(p)]
+            file_data[p.name] = build_debug_tree(p)
     return file_data
+
 
 def repl():
     running = True
@@ -35,42 +38,56 @@ def repl():
         except EOFError:
             print("this way")
             break
-
+        
         if cmd in ("exit", "quit"):
             break
-
+        
         if not cmd:
             continue
-            
+        
         cmd_list = cmd.split()
         first_cmd = cmd_list[0]
         
         if first_cmd == DebugData.Create.value:
+            if len(cmd_list) < 2:
+                print("missing config name")
+                continue
+            
             debug_config = cmd_list[1]
             debug_root = get_debug_route(cmd_list)
             debug_tree = build_debug_tree(debug_root)
+            
             DEBUG_FILE = parent_directory / Path(f"{debug_config}.json")
-            data = {DebugData.DebugEnabled.value: False, DebugData.DebugFileTree.value: debug_tree}
+            data = {
+                DebugData.DebugEnabled.value: False,
+                DebugData.DebugFileTree.value: debug_tree
+            }
+            
             with open(DEBUG_FILE, "w") as f:
                 json.dump(data, f, indent=4)
-            
+        
         elif first_cmd == DebugData.SetDebug.value:
+            if len(cmd_list) < 3:
+                print("usage: set_debug <name> <true/false>")
+                continue
+            
             debug_config = cmd_list[1]
             DEBUG_FILE = parent_directory / Path(f"{debug_config}.json")
+            
             with open(DEBUG_FILE, "r") as f:
                 data = json.load(f)
             
             set_debug_config = cmd_list[2].lower() == "true"
-            # update alleen als set_debug_config niet None is
-            if set_debug_config is not None:
-                data[DebugData.DebugEnabled.value] = set_debug_config
+            data[DebugData.DebugEnabled.value] = set_debug_config
             
             with open(DEBUG_FILE, "w") as f:
                 json.dump(data, f, indent=4)
+        
         elif first_cmd == DebugData.Exit.value:
             running = False
         else:
             print(f"unknown command: {cmd}")
+
 
 if __name__ == "__main__":
     repl()

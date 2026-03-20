@@ -13,8 +13,6 @@ class FontManager:
         #self.font_map = Texture(self.font_map_image,"uFontMap", TextureType.GREY_SCALE)
         self.fonts: dict[str, Font] = {}
     
-    from PIL import Image
-    
     def render_text(self, text: str, font: str, text_height: int):
         render_font: Font = self.fonts[font]
         

@@ -1,10 +1,11 @@
 from OpenGL.GL import *
 from Uniform_Registry import uniform_registry, UniformTypes
 from enum import Enum ,auto
+from PIL import Image
 
 class TextureType(Enum):
-    RGBA = auto()
-    GREY_SCALE = auto()
+    RGBA = "RGBA"
+    GREY_SCALE = "L"
 
 class ShaderPassData:
     def __init__(self,frag_shader, vert_shader):
@@ -56,7 +57,7 @@ def set_glActiveTexture(name: str):
 
 class Texture:
     def __init__(self, image, name, image_type):
-        self.image_type = image_type
+        self.image_type: TextureType = image_type
         self.name = name
         uniform_registry.register_uniform(self.name, UniformTypes.Texture)
         self.texture = glGenTextures(1)
@@ -74,25 +75,36 @@ class Texture:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
 
-    def upload(self, image):
-        image = image.convert("RGBA")
+    def upload(self, image: Image.Image):
+        self.check_image_type(image)
+        if self.image_type == TextureType.RGBA:
+            internal = GL_RGBA
+            fmt = GL_RGBA
+        elif self.image_type == TextureType.GREY_SCALE:
+            internal = GL_R8
+            fmt = GL_RED
+        else:
+            raise NotImplementedError("This can not happen ever")
         w, h = image.size
         pixels = image.tobytes()
-
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
 
         glTexImage2D(
             GL_TEXTURE_2D,
             0,
-            GL_RGBA8,
+            internal,
             w,
             h,
             0,
-            GL_RGBA,
+            fmt,
             GL_UNSIGNED_BYTE,
             pixels
         )
-
+    
+    def check_image_type(self , image: Image.Image):
+        if self.image_type.value != image.mode:
+            raise Exception(f"can not pass {image.mode} to this Texture with: {self.image_type.value}")
+        
     def resend(self, image):
         self.bind_texture()
         self.upload(image)

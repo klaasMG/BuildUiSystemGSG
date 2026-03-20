@@ -60,6 +60,7 @@ class GSGRenderSystem(QOpenGLWidget):
         self.asset_ids = self.GSG_gui_system.asset_ids
         self.text_ids = self.GSG_gui_system.text_ids
         self.texture_atlas = Image.open("assets/image_atlases/atlas.png")
+        self.texture_atlas = self.texture_atlas.convert("RGBA")
         self.atlas_texture: Texture | None = None
         self.open_assets = set()
         self.buffers: dict[int, WidgetDataType] = {}  # name -> buffer id

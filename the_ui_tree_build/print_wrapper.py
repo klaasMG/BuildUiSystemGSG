@@ -1,7 +1,12 @@
 import threading
-import sys
+from ui_debug import debug_func
 
 def tprint(*args, **kwargs):
-    line = sys._getframe().f_lineno
     thread = threading.current_thread()
-    print(f"[{thread.name} | {thread.ident}] on line: {line}", *args, **kwargs)
+    print(f"[{thread.name} | {thread.ident}]" , *args, **kwargs)
+    
+def dbg(*args, **kwargs):
+    debug_func(print,*args, **kwargs)
+    
+def tdbg(*args, **kwargs):
+    debug_func(tprint,*args, **kwargs)
