@@ -5,6 +5,8 @@ import sys
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QTimer
 import numpy as np
+
+from the_ui_tree_build.FontManager import FontManager
 from widget_data import WidgetDataType
 from event_system import event_system, EventQueue, EventTypeEnum
 from threading import Lock, Thread
@@ -68,6 +70,7 @@ class GSGUiManager:
         self.app = app(sys.argv, event_system=event_system, parent=self)
         self.running = True
         self.widget_thread = Thread(target=self.update_widgets)
+        self.font_manager = FontManager()
     
     def run_ui_manager(self):
         self.GSG_renderer_system = GSGRenderSystem(self)
@@ -171,7 +174,7 @@ class GSGUiManager:
         elif data[13] == "asset":
             self.widget_data[WidgetDataType.ASSETS_ID][widget_id] = self.next_asset_id
             self.asset_ids[data[12]] = self.next_asset_id
-            self.next_text_id += 1
+            self.next_asset_id += 1
     
     def clear_widget_data(self , wid):
         default = -1

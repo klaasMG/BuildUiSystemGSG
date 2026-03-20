@@ -2,16 +2,30 @@
 from font_holder import Font
 # noinspection PyUnresolvedReferences
 from GridPacker import TextPacker, PlacedRect
-from PassSystem import Texture, TextureType
 from PIL import Image
 from pathlib import Path
 
 ttf_path = Path("assets/fonts/AovelSansRounded-rdDL.ttf")
+
+
+def dict_to_flat_list(d: dict[int, list[int]]) -> list[int]:
+    if not d:
+        return []
+    max_id = max(d.keys())
+    result = [-1] * ((max_id + 1) * 4)
+    for i, values in d.items():
+        base = i * 4
+        result[base:base + 4] = values
+    return result
+
 class FontManager:
     def __init__(self):
         self.font_map_image = Image.new("L",(8192,8912),0)
-        #self.font_map = Texture(self.font_map_image,"uFontMap", TextureType.GREY_SCALE)
+        self.current_text_id: int = 0
+        self.text_packer = TextPacker()
+        self.placed_rects: dict[int, list[int]] = {}
         self.fonts: dict[str, Font] = {}
+        
     
     def render_text(self, text: str, font: str, text_height: int):
         render_font: Font = self.fonts[font]
@@ -49,9 +63,19 @@ class FontManager:
             cursor_x += advance  # move pen
         return text_image
     
-    def update_texture(self):
-        pass
-        #self.font_map.resend(self.font_map_image)
+    def update_render_image(self, text_image: Image.Image):
+        width, height = text_image.size
+        text_id = self.current_text_id
+        self.current_text_id += 1
+        pack_data = self.text_packer.add(text_id, width, height)
+        is_packed: bool = pack_data[0]
+        if not is_packed:
+            raise Exception("")
+        placed_rect: PlacedRect = pack_data[1]
+        pos_x = placed_rect.pos_x
+        pos_y = placed_rect.pos_y
+        self.font_map_image.paste(text_image,(pos_x, pos_y, pos_x + width, pos_y + height))
+        self.placed_rects[placed_rect.id] = [pos_x, pos_y, pos_x + width, pos_y + height]
         
     def add_font(self, font_name: str, font_file: Path):
         font_file = str(font_file)
@@ -60,6 +84,9 @@ class FontManager:
     
     def remove_font(self, font_name):
         self.fonts[font_name] = None
+        
+    def get_render_info(self):
+        return dict_to_flat_list(self.placed_rects)
         
     @staticmethod
     def render_char( char: str, render_font: Font, text_height: int):
@@ -71,7 +98,3 @@ class FontManager:
             render_info = render_font.get_render_info(text_height, 0)
         
         return char_array, render_info
-    
-f = FontManager()
-f.add_font("font",ttf_path)
-f.render_text("lk","font", 45)
