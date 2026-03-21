@@ -61,7 +61,7 @@ class FontManager:
             text_image.paste(char_image, (cursor_x + lsb, baseline_y + y0))
             
             cursor_x += advance  # move pen
-        return text_image
+        self.update_render_image(text_image)
     
     def update_render_image(self, text_image: Image.Image):
         width, height = text_image.size

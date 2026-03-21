@@ -57,7 +57,7 @@ class GSGUiManager:
         self.ui_manager_queue: EventQueue = event_system.add_queue("ui_manager")
         self.assets = []
         self.text = []
-        self.text_ids = {}
+        self.text_ids: dict[tuple[str, int], int] = {}
         self.asset_ids = {}
         self.next_text_id = 0
         self.next_asset_id = 0
@@ -149,15 +149,21 @@ class GSGUiManager:
         self.widget_data[WidgetDataType.SHAPE][widget_id] = data[11] if data[11] != -1 else self.widget_data[WidgetDataType.SHAPE][widget_id]
         self.widget_data[WidgetDataType.PARENT][widget_id] = parent if parent != -1 else self.widget_data[WidgetDataType.PARENT][widget_id]
         if data[13] == "text":
-            self.widget_data[WidgetDataType.TEXT_ID][widget_id] = self.next_text_id
-            self.text_ids[data[12]] = self.next_text_id
-            self.next_text_id += 1
+            text: str = data[12]
+            key = (text, pos[5] - pos[2])
+            if key not in self.widget_data[WidgetDataType.ASSETS_ID]:
+                self.text_ids[key] = self.next_text_id
+                self.next_text_id += 1
+                self.widget_data[WidgetDataType.TEXT_ID][widget_id] = self.next_text_id
+            else:
+                id = self.text_ids[key]
+                self.widget_data[WidgetDataType.TEXT_ID][widget_id] = id
         elif data[13] == "asset":
             self.widget_data[WidgetDataType.ASSETS_ID][widget_id] = self.next_asset_id
             self.asset_ids[data[12]] = self.next_asset_id
             self.next_asset_id += 1
     
-    def set_widget_defaults(self , widget_id, parent , data=None):
+    def set_widget_defaults(self , widget_id, parent , data = None):
         if not data or len(data) != 14:
             data = [-1] * 14
         pos = data[0:6]
@@ -168,9 +174,15 @@ class GSGUiManager:
         self.widget_data[WidgetDataType.SHAPE][widget_id] = data[11]
         self.widget_data[WidgetDataType.PARENT][widget_id] = parent if parent is not None else -1
         if data[13] == "text":
-            self.widget_data[WidgetDataType.TEXT_ID][widget_id] = self.next_text_id
-            self.text_ids[data[12]] = self.next_text_id
-            self.next_text_id += 1
+            text: str = data[12]
+            key = (text, pos[5] - pos[2])
+            if key not in self.widget_data[WidgetDataType.ASSETS_ID]:
+                self.text_ids[key] = self.next_text_id
+                self.next_text_id += 1
+                self.widget_data[WidgetDataType.TEXT_ID][widget_id] = self.next_text_id
+            else:
+                id = self.text_ids[key]
+                self.widget_data[WidgetDataType.TEXT_ID][widget_id] = id
         elif data[13] == "asset":
             self.widget_data[WidgetDataType.ASSETS_ID][widget_id] = self.next_asset_id
             self.asset_ids[data[12]] = self.next_asset_id
