@@ -154,6 +154,7 @@ class GSGUiManager:
             if key not in self.widget_data[WidgetDataType.ASSETS_ID]:
                 self.text_ids[key] = self.next_text_id
                 self.next_text_id += 1
+                self.text.append(text)
                 self.widget_data[WidgetDataType.TEXT_ID][widget_id] = self.next_text_id
             else:
                 id = self.text_ids[key]
@@ -179,6 +180,7 @@ class GSGUiManager:
             if key not in self.widget_data[WidgetDataType.ASSETS_ID]:
                 self.text_ids[key] = self.next_text_id
                 self.next_text_id += 1
+                self.text.append(text)
                 self.widget_data[WidgetDataType.TEXT_ID][widget_id] = self.next_text_id
             else:
                 id = self.text_ids[key]
@@ -203,10 +205,6 @@ class GSGUiManager:
         for key , (size , dtype) in widget_data_types.items():
             arr = np.full(size , -1 , dtype=dtype)
             self.widget_data[key] = arr
-            
-    def add_text(self,text):
-        self.text_set.add(text)
-        self.text.append(text)
         
     def add_asset(self,path):
         self.asset_path.add(path)
