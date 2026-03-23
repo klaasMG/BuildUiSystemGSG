@@ -164,10 +164,6 @@ class GSGRenderSystem(QOpenGLWidget):
         time_finish = time_start - time.time()
         print(time_finish)
     
-    def init_data(self):
-        for data in self.GSG_gui_system.widget_data:
-            self.buffers[data] = self.GSG_gui_system.widget_data[data]
-    
     def paintGL(self):
         if self.is_counting:
             if len(self.real_time) > 1:
