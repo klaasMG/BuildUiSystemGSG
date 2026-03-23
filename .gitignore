@@ -8,9 +8,13 @@
 /the_ui_tree_build/frame_times.txt
 shader_include_graph.exe
 /the_ui_tree_build/assets/preprocessed_shaders
+/the_ui_tree_build/assets/GMakeDir
+opencode-cli.exe
+check_here.py
 /the_code/config.json
 .gitignore
 /public_mirror_repository's
 .env
 .ENV
 /the_ui_tree_build/check_here.py
+the_ui_tree_build/check_here.py
