@@ -5,7 +5,7 @@ import sys
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QTimer
 import numpy as np
-
+from pathlib import Path
 from the_ui_tree_build.FontManager import FontManager
 from widget_data import WidgetDataType
 from event_system import event_system, EventQueue, EventTypeEnum
@@ -70,7 +70,9 @@ class GSGUiManager:
         self.app = app(sys.argv, event_system=event_system, parent=self)
         self.running = True
         self.widget_thread = Thread(target=self.update_widgets)
+        ttf_path = Path("assets/fonts/AovelSansRounded-rdDL.ttf")
         self.font_manager = FontManager()
+        self.font_manager.add_font("Font", ttf_path)
     
     def run_ui_manager(self):
         self.GSG_renderer_system = GSGRenderSystem(self)
@@ -153,9 +155,11 @@ class GSGUiManager:
             key = (text, pos[5] - pos[2])
             if key not in self.widget_data[WidgetDataType.ASSETS_ID]:
                 self.text_ids[key] = self.next_text_id
-                self.next_text_id += 1
                 self.text.append(text)
                 self.widget_data[WidgetDataType.TEXT_ID][widget_id] = self.next_text_id
+                text_heigt: int = key[1]
+                self.font_manager.render_text(text, "Font", text_heigt, self.next_text_id)
+                self.next_text_id += 1
             else:
                 id = self.text_ids[key]
                 self.widget_data[WidgetDataType.TEXT_ID][widget_id] = id
@@ -179,9 +183,11 @@ class GSGUiManager:
             key = (text, pos[5] - pos[2])
             if key not in self.widget_data[WidgetDataType.ASSETS_ID]:
                 self.text_ids[key] = self.next_text_id
-                self.next_text_id += 1
                 self.text.append(text)
                 self.widget_data[WidgetDataType.TEXT_ID][widget_id] = self.next_text_id
+                text_heigt: int = key[1]
+                self.font_manager.render_text(text, "Font", text_heigt, self.next_text_id)
+                self.next_text_id += 1
             else:
                 id = self.text_ids[key]
                 self.widget_data[WidgetDataType.TEXT_ID][widget_id] = id

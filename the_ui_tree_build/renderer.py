@@ -1,4 +1,6 @@
 import time
+from copy import deepcopy
+
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QTimer
@@ -61,7 +63,9 @@ class GSGRenderSystem(QOpenGLWidget):
         self.text_ids = self.GSG_gui_system.text_ids
         self.texture_atlas = Image.open("assets/image_atlases/atlas.png")
         self.texture_atlas = self.texture_atlas.convert("RGBA")
+        self.text_texture_atlas = Image.new("L", (8192,8192), 0)
         self.atlas_texture: Texture | None = None
+        self.text_atlas_copy: Texture | None = None
         self.open_assets = set()
         self.buffers: dict[int, WidgetDataType] = {}  # name -> buffer id
         self.assets_to_update = {}
@@ -111,10 +115,10 @@ class GSGRenderSystem(QOpenGLWidget):
         glDisable(GL_BLEND)
         glDisable(GL_DITHER)
         
-        self.shader_passes[ShaderPass.PASS_BASIC] = ShaderPassData("assets/preprocessed_shaders/basic_frag.glsl",
-                                                                   "assets/preprocessed_shaders/basic_vert.glsl")
-        self.shader_passes[ShaderPass.PASS_FINAL] = ShaderPassData("assets/preprocessed_shaders/final_frag.glsl",
-                                                                   "assets/preprocessed_shaders/final_vert.glsl")
+        self.shader_passes[ShaderPass.PASS_BASIC] = ShaderPassData("assets/GMakeDir/basic_frag.glsl",
+                                                                   "assets/GMakeDir/basic_vert.glsl")
+        self.shader_passes[ShaderPass.PASS_FINAL] = ShaderPassData("assets/GMakeDir/final_frag.glsl",
+                                                                   "assets/GMakeDir/final_vert.glsl")
         
         # --- build shader program ---
         self.init_shaders(self.shader_passes)
@@ -149,6 +153,13 @@ class GSGRenderSystem(QOpenGLWidget):
         
         self.atlas_texture = Texture(self.texture_atlas,"uAtlas", TextureType.RGBA)
         
+        locked: bool = self.GSG_gui_system.font_manager.text_lock.lock(0.01)
+        if locked:
+            self.text_texture_atlas = deepcopy(self.GSG_gui_system.font_manager.font_map_image)
+            data = self.GSG_gui_system.font_manager.get_render_info()
+        self.text_atlas_copy = Texture(self.text_texture_atlas, "uTextAtlas", TextureType.GREY_SCALE)
+        self.GSG_gui_system.font_manager.text_lock.release()
+        
         self.init_SSBOs()
         time_finish = time_start - time.time()
         print(time_finish)
@@ -171,7 +182,18 @@ class GSGRenderSystem(QOpenGLWidget):
                         f.write(f"{t}\n")
                 self.real_time.clear()
                 self.frame_times.clear()
-            
+        
+        has_changed = False
+        locked: bool = self.GSG_gui_system.font_manager.text_lock.lock(0.01)
+        if locked:
+            data = self.GSG_gui_system.font_manager.get_render_info()
+            has_changed = data[1]
+            if has_changed:
+                self.text_texture_atlas = deepcopy(self.GSG_gui_system.font_manager.font_map_image)
+        self.GSG_gui_system.font_manager.text_lock.release()
+        if has_changed:
+            self.text_atlas_copy.resend(self.text_texture_atlas)
+        
         self.GSG_gui_system.pos_update()
         
         glClearBufferfv(GL_COLOR, 0, (0.0, 0.0, 0.0, 0.0))  # RGBA8

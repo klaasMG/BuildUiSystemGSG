@@ -4,6 +4,7 @@ from font_holder import Font
 from GridPacker import TextPacker, PlacedRect
 from PIL import Image
 from pathlib import Path
+from hold_lock import HoldLock
 
 ttf_path = Path("assets/fonts/AovelSansRounded-rdDL.ttf")
 
@@ -25,9 +26,12 @@ class FontManager:
         self.text_packer = TextPacker()
         self.placed_rects: dict[int, list[int]] = {}
         self.fonts: dict[str, Font] = {}
+        self.text_lock = HoldLock()
+        self.has_changed = False
+        self.last_text_box_list = []
         
-    
-    def render_text(self, text: str, font: str, text_height: int):
+    def render_text(self, text: str, font: str, text_height: int, text_id: int):
+        self.has_changed = True
         render_font: Font = self.fonts[font]
         
         # First pass: compute total width using advances
@@ -61,12 +65,10 @@ class FontManager:
             text_image.paste(char_image, (cursor_x + lsb, baseline_y + y0))
             
             cursor_x += advance  # move pen
-        self.update_render_image(text_image)
+        self.update_render_image(text_image, text_id)
     
-    def update_render_image(self, text_image: Image.Image):
+    def update_render_image(self, text_image: Image.Image, text_id: int):
         width, height = text_image.size
-        text_id = self.current_text_id
-        self.current_text_id += 1
         pack_data = self.text_packer.add(text_id, width, height)
         is_packed: bool = pack_data[0]
         if not is_packed:
@@ -74,8 +76,10 @@ class FontManager:
         placed_rect: PlacedRect = pack_data[1]
         pos_x = placed_rect.pos_x
         pos_y = placed_rect.pos_y
+        self.text_lock.lock()
         self.font_map_image.paste(text_image,(pos_x, pos_y, pos_x + width, pos_y + height))
         self.placed_rects[placed_rect.id] = [pos_x, pos_y, pos_x + width, pos_y + height]
+        self.text_lock.release()
         
     def add_font(self, font_name: str, font_file: Path):
         font_file = str(font_file)
@@ -86,7 +90,18 @@ class FontManager:
         self.fonts[font_name] = None
         
     def get_render_info(self):
-        return dict_to_flat_list(self.placed_rects)
+        locked: bool = self.text_lock.lock(0.01)
+        if locked:
+            text_box_data = dict_to_flat_list(self.placed_rects)
+            self.last_text_box_list = text_box_data
+        else:
+            text_box_data = self.last_text_box_list
+        if self.has_changed:
+            has_changed: bool = True
+            self.has_changed = False
+        else:
+            has_changed = False
+        return text_box_data, has_changed
         
     @staticmethod
     def render_char( char: str, render_font: Font, text_height: int):
