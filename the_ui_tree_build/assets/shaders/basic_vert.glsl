@@ -35,6 +35,10 @@ layout(std430, binding = 8) buffer Parent {
     int widget_parent[];
 };
 
+layout(std430, binding = 11) buffer TextBoxes {
+    ivec4 widget_text_box[];
+};
+
 int get_position(int index,int offset){
     int position = widget_pos[index * 6 + offset];
     int parent = widget_parent[index];

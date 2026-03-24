@@ -47,7 +47,8 @@ class GSGRenderSystem(QOpenGLWidget):
                                                  WidgetDataType.SHAPE: (self.widget_max, np.int32),
                                                  WidgetDataType.ASSETS_ID: (self.widget_max, np.int32),
                                                  WidgetDataType.TEXT_ID: (self.widget_max, np.int32),
-                                                 WidgetDataType.PARENT: (self.widget_max, np.int32)})
+                                                 WidgetDataType.PARENT: (self.widget_max, np.int32),})
+        self.text_boxes: dict = {WidgetDataType.TEXT_BOXES: np.zeros(self.widget_max * 4, dtype=np.int32),}
         self.is_counting = True
         self.frame_times: list[float] = []
         self.real_time: list[float] = []
@@ -225,7 +226,8 @@ class GSGRenderSystem(QOpenGLWidget):
     
     def basic_render_pass(self):
         shader_pass = self.shader_passes[ShaderPass.PASS_BASIC]
-        
+        print(shader_pass.__dict__)
+        print(shader_pass.fbo)
         glBindFramebuffer(GL_FRAMEBUFFER, shader_pass.fbo)
         glViewport(0, 0, self.width(), self.height())
         
@@ -373,14 +375,33 @@ class GSGRenderSystem(QOpenGLWidget):
             
             self.buffers[data_enum] = buffer_id
         
+        for data_enum, parent_array in self.text_boxes.items():
+            if data_enum in self.buffers and self.buffers[data_enum] is not None:
+                continue
+            
+            buffer_id = glGenBuffers(1)
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer_id)
+            
+            array = np.array(parent_array, dtype=np.int32)
+            glBufferData(GL_SHADER_STORAGE_BUFFER, array.nbytes, array, GL_DYNAMIC_DRAW)
+            
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, data_enum.value, buffer_id)
+            self.buffers[data_enum] = buffer_id
+        
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
     
     def update_ssbo(self, data_enum):
-        buffer_id = self.buffers.get(data_enum)
-        if not buffer_id:
-            return
+        if data_enum in self.widget_data:
+            buffer_id = self.buffers.get(data_enum)
+            if not buffer_id:
+                return
+            array = self.widget_data[data_enum]
+        else:
+            buffer_id = self.buffers.get(data_enum)
+            if not buffer_id:
+                return
+            array = self.text_boxes[data_enum]
         
-        array = self.widget_data[data_enum]
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer_id)
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, array.nbytes, array)
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)

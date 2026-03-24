@@ -127,7 +127,7 @@ class GSGUiManager:
         if data is not None:
             used = set(data.keys())
             expected = set(WidgetDataType)
-            excluded = {WidgetDataType.ASSETS_ID, WidgetDataType.ASSETS, WidgetDataType.TEXT, WidgetDataType.TEXT_ID, WidgetDataType.PARENT}
+            excluded = {WidgetDataType.ASSETS_ID, WidgetDataType.ASSETS, WidgetDataType.TEXT, WidgetDataType.TEXT_ID, WidgetDataType.PARENT, WidgetDataType.TEXT_BOXES}
         
             missing = expected - excluded - used
             if missing:

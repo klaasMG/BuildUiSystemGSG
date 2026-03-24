@@ -4,6 +4,10 @@
 uniform sampler2D uAtlas;
 uniform sampler2D uTextAtlas;
 
+layout(std430, binding = 11) buffer TextBoxe{
+    ivec4 widget_text_box[];
+};
+
 in vec2 vUV;
 flat in int vIndex;
 flat in Widget widget;
