@@ -96,6 +96,7 @@ class GSGRenderSystem(QOpenGLWidget):
         self.init_textures(width, height)
     
     def initializeGL(self):
+        print("initializeGL")
         time_start = time.time()
         width = self.width()
         height = self.height()
@@ -121,8 +122,10 @@ class GSGRenderSystem(QOpenGLWidget):
         self.shader_passes[ShaderPass.PASS_FINAL] = ShaderPassData("assets/GMakeDir/final_frag.glsl",
                                                                    "assets/GMakeDir/final_vert.glsl")
         
+        print("th")
         # --- build shader program ---
         self.init_shaders(self.shader_passes)
+        print("fg")
         for shader_pass_type, shader_pass in self.shader_passes.items():
             # --- create VAO + VBO for your existing self.quad ---
             shader_pass.assign_vao()
@@ -317,6 +320,7 @@ class GSGRenderSystem(QOpenGLWidget):
         glBindImageTexture(0,self.height_texture,0,GL_FALSE,0,GL_READ_WRITE,GL_R32UI)
     
     def init_FBOs(self, width, height, shader_pass):
+        print("this is here")
         shader_pass.assign_fbo()
         glBindFramebuffer(GL_FRAMEBUFFER, shader_pass.fbo)
         
@@ -413,7 +417,7 @@ class GSGRenderSystem(QOpenGLWidget):
     
     @staticmethod
     def load_shader_program(vertex_path, fragment_path):
-        # Helper to read file
+        
         def read_file(path):
             with open(path, "r") as f:
                 return f.read()
@@ -421,57 +425,49 @@ class GSGRenderSystem(QOpenGLWidget):
         def include_glsl(path, seen=None):
             if seen is None:
                 seen = set()
-            
-            # avoid including the same file twice
             if path in seen:
                 return ""
             seen.add(path)
             
             src = read_file(path)
             final = ""
-            
-            for line in src.splitlines(True):  # keep newlines
+            for line in src.splitlines(True):
                 stripped = line.strip()
                 if stripped.startswith("#include"):
-                    # get filename
                     inc = stripped.split()[1].strip('"<>')
                     final += include_glsl(inc, seen)
                 else:
                     final += line
-            
             return final
         
-        # Compile a shader
         def compile_shader(source, shader_type):
             shader = glCreateShader(shader_type)
             glShaderSource(shader, source)
             glCompileShader(shader)
             
-            if not glGetShaderiv(shader, GL_COMPILE_STATUS):
-                log = glGetShaderInfoLog(shader).decode()
+            # Always get log
+            log = glGetShaderInfoLog(shader)
+            status = glGetShaderiv(shader, GL_COMPILE_STATUS)
+            if not status:
                 kind = "Vertex" if shader_type == GL_VERTEX_SHADER else "Fragment"
-                raise RuntimeError(f"{kind} shader compilation failed:\n{log}")
+                raise RuntimeError(f"{kind} shader compilation failed:\n{log.decode() if log else 'No log available'}")
             return shader
         
-        # Read sources
         vertex_src = include_glsl(vertex_path)
         fragment_src = include_glsl(fragment_path)
         
-        # Compile shaders
         vertex_shader = compile_shader(vertex_src, GL_VERTEX_SHADER)
         fragment_shader = compile_shader(fragment_src, GL_FRAGMENT_SHADER)
         
-        # Create program and link
         program = glCreateProgram()
         glAttachShader(program, vertex_shader)
         glAttachShader(program, fragment_shader)
         glLinkProgram(program)
         
+        log = glGetProgramInfoLog(program)
         if not glGetProgramiv(program, GL_LINK_STATUS):
-            log = glGetProgramInfoLog(program).decode()
-            raise RuntimeError(f"Shader program link failed:\n{log}")
+            raise RuntimeError(f"Shader program link failed:\n{log.decode() if log else 'No log available'}")
         
-        # Cleanup
         glDetachShader(program, vertex_shader)
         glDetachShader(program, fragment_shader)
         glDeleteShader(vertex_shader)

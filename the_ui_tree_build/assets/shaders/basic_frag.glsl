@@ -4,7 +4,7 @@
 uniform sampler2D uAtlas;
 uniform sampler2D uTextAtlas;
 
-layout(std430, binding = 11) buffer TextBoxe{
+layout(std430, binding = 11) buffer TextBoxes {
     ivec4 widget_text_box[];
 };
 
