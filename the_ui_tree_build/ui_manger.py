@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QTimer
 import numpy as np
 from pathlib import Path
-from the_ui_tree_build.FontManager import FontManager
+from FontManager import FontManager
 from widget_data import WidgetDataType
 from event_system import event_system, EventQueue, EventTypeEnum
 from threading import Lock, Thread
@@ -102,12 +102,12 @@ class GSGUiManager:
         while self.running:
             if not self.square_exist:
                 self.sqaure = GSGWidget(parent=self.root)
-                path_or_data = "assets/images/pattern.png"
+                path_or_data = "ghhh"
                 self.append_widget(self.sqaure, {WidgetDataType.POSITION: [320, 200, 1, 420, 300, 1],
                                              WidgetDataType.COLOUR: [255, 255, 255, 255], WidgetDataType.SHADER_PASS: 2,
                                              WidgetDataType.SHAPE: -1,
                                              WidgetDataType.PATH_OR_DATA: path_or_data,
-                                             WidgetDataType.ASSET_OR_TEXT: "asset"})
+                                             WidgetDataType.ASSET_OR_TEXT: "text"})
                 self.square_exist = True
             time.sleep(0.1)
     
@@ -152,8 +152,8 @@ class GSGUiManager:
         self.widget_data[WidgetDataType.PARENT][widget_id] = parent if parent != -1 else self.widget_data[WidgetDataType.PARENT][widget_id]
         if data[13] == "text":
             text: str = data[12]
-            key = (text, pos[5] - pos[2])
-            if key not in self.widget_data[WidgetDataType.ASSETS_ID]:
+            key = (text, pos[4] - pos[1])
+            if key not in self.text_ids:
                 self.text_ids[key] = self.next_text_id
                 self.text.append(text)
                 self.widget_data[WidgetDataType.TEXT_ID][widget_id] = self.next_text_id
@@ -180,12 +180,15 @@ class GSGUiManager:
         self.widget_data[WidgetDataType.PARENT][widget_id] = parent if parent is not None else -1
         if data[13] == "text":
             text: str = data[12]
-            key = (text, pos[5] - pos[2])
-            if key not in self.widget_data[WidgetDataType.ASSETS_ID]:
+            for pose in pos:
+                print(pose)
+            key = (text, pos[4] - pos[1])
+            if key not in self.text_ids:
                 self.text_ids[key] = self.next_text_id
                 self.text.append(text)
                 self.widget_data[WidgetDataType.TEXT_ID][widget_id] = self.next_text_id
                 text_heigt: int = key[1]
+                print(f"this is the text?{text} {text_heigt} {self.next_text_id}")
                 self.font_manager.render_text(text, "Font", text_heigt, self.next_text_id)
                 self.next_text_id += 1
             else:

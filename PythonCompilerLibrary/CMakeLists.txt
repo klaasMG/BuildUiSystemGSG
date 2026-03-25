@@ -8,4 +8,6 @@ add_executable(PCL MainPCL.cpp
         tokens.h
         AST_old.h
         AST.h
-        AST.cpp)
+        AST.cpp
+        GMakePythonParser.cpp
+        GMakePythonParser.h)

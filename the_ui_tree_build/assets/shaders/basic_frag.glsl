@@ -2,7 +2,7 @@
 #include "C:/Users/klaas/PycharmProjects/BuildUiSystemGSG/the_ui_tree_build/assets/shaders/widget_builder.glsl"
 
 uniform sampler2D uAtlas;
-uniform sampler2D uTextAtlas;
+uniform sampler2D uTextAtlas; //a r channel is used here
 
 layout(std430, binding = 11) buffer TextBoxes {
     ivec4 widget_text_box[];
@@ -28,14 +28,7 @@ void main() {
     uint prev = imageAtomicMax(heightMap, FragPosInt, int_height);
     int pixel_pos_x = 0;
     int pixel_pos_y = 0;
-    if (widget.asset_id == -1){
-        colour = vec4(
-        col_to_ndc(colour_255.x),
-        col_to_ndc(colour_255.y),
-        col_to_ndc(colour_255.z),
-        col_to_ndc(colour_255.w));
-    }
-    else {
+    if (widget.asset_id != -1){
         int asset_id = widget.asset_id;
         int pixel_x = FragPosInt.x - widget.pos_one.x;
         int pixel_y = FragPosInt.y - widget.pos_one.y;
@@ -46,6 +39,16 @@ void main() {
         pixel_pos_y = pixel_pos_y;
         ivec2 pixel = ivec2(pixel_pos_x,pixel_pos_y);
         colour = texelFetch(uAtlas, pixel, 0);
+    }
+    else if(widget.text_id != -1){
+        int text_id = widget.text_id;
+        ivec4 textbox = widget_text_box[text_id];
+    } else{
+        colour = vec4(
+        col_to_ndc(colour_255.x),
+        col_to_ndc(colour_255.y),
+        col_to_ndc(colour_255.z),
+        col_to_ndc(colour_255.w));
     }
 
     if (FragPos.x < widget.pos_one.x) {

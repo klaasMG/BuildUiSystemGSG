@@ -49,7 +49,7 @@ class GSGRenderSystem(QOpenGLWidget):
                                                  WidgetDataType.TEXT_ID: (self.widget_max, np.int32),
                                                  WidgetDataType.PARENT: (self.widget_max, np.int32),})
         self.text_boxes: dict = {WidgetDataType.TEXT_BOXES: np.zeros(self.widget_max * 4, dtype=np.int32),}
-        self.is_counting = True
+        self.is_counting = False
         self.frame_times: list[float] = []
         self.real_time: list[float] = []
         self.height_texture = None
@@ -122,10 +122,8 @@ class GSGRenderSystem(QOpenGLWidget):
         self.shader_passes[ShaderPass.PASS_FINAL] = ShaderPassData("assets/GMakeDir/final_frag.glsl",
                                                                    "assets/GMakeDir/final_vert.glsl")
         
-        print("th")
         # --- build shader program ---
         self.init_shaders(self.shader_passes)
-        print("fg")
         for shader_pass_type, shader_pass in self.shader_passes.items():
             # --- create VAO + VBO for your existing self.quad ---
             shader_pass.assign_vao()
@@ -229,8 +227,6 @@ class GSGRenderSystem(QOpenGLWidget):
     
     def basic_render_pass(self):
         shader_pass = self.shader_passes[ShaderPass.PASS_BASIC]
-        print(shader_pass.__dict__)
-        print(shader_pass.fbo)
         glBindFramebuffer(GL_FRAMEBUFFER, shader_pass.fbo)
         glViewport(0, 0, self.width(), self.height())
         

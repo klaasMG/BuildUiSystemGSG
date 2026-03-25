@@ -21,7 +21,7 @@ def dict_to_flat_list(d: dict[int, list[int]]) -> list[int]:
 
 class FontManager:
     def __init__(self):
-        self.font_map_image = Image.new("L",(8192,8912),0)
+        self.font_map_image = Image.new("L",(8192,8912),1)
         self.current_text_id: int = 0
         self.text_packer = TextPacker()
         self.placed_rects: dict[int, list[int]] = {}
@@ -29,27 +29,27 @@ class FontManager:
         self.text_lock = HoldLock()
         self.has_changed = False
         self.last_text_box_list = []
-        
+        self.bool = True
+    
     def render_text(self, text: str, font: str, text_height: int, text_id: int):
         self.has_changed = True
-        render_font: Font = self.fonts[font]
+        render_font = self.fonts[font]
         
-        # First pass: compute total width using advances
+        # Compute width
         text_length = 0
         for char in text:
-            render_info = render_font.get_render_info(text_height, ord(char))
-            advance = render_info[0]
+            advance = render_font.get_render_info(text_height, ord(char))[0]
             text_length += advance
         
-        # Create image tall enough for the line
+        # Image
         text_image = Image.new("L", (text_length, text_height), 0)
         
-        # Compute baseline (top + ascent)
+        # Use ascent as baseline
         if len(text) > 0:
-            # get ascent from first char (all glyphs share font ascent)
             _, _, scaledAscent, scaledDescent, _ = render_font.get_render_info(text_height, ord(text[0]))
         else:
             scaledAscent = text_height
+        
         baseline_y = scaledAscent
         
         cursor_x = 0
@@ -58,13 +58,15 @@ class FontManager:
             char_image = Image.fromarray(rendered_char, "L")
             
             advance, lsb, scaledAscent, scaledDescent, lineGap = rendered_info
-            # y0 = char bitmap offset relative to baseline
-            y0 = rendered_info[2] - scaledAscent  # or get from glyph bitmap box if available
             
-            # Position: x = cursor + lsb, y = baseline + y0
-            text_image.paste(char_image, (cursor_x + lsb, baseline_y + y0))
+            # --- FIX ---
+            # Place glyph so its bottom roughly aligns with baseline
+            y = baseline_y - char_image.height
             
-            cursor_x += advance  # move pen
+            text_image.paste(char_image, (cursor_x + lsb, int(y)))
+            
+            cursor_x += advance
+        
         self.update_render_image(text_image, text_id)
     
     def update_render_image(self, text_image: Image.Image, text_id: int):
