@@ -1,5 +1,5 @@
 import time
-from print_wrapper import tprint
+from print_wrapper import tprint, dbg
 from renderer import GSGRenderSystem
 import sys
 from PySide6.QtWidgets import QApplication
@@ -102,7 +102,7 @@ class GSGUiManager:
         while self.running:
             if not self.square_exist:
                 self.sqaure = GSGWidget(parent=self.root)
-                path_or_data = "ghhh"
+                path_or_data = "assets/images/pattern.png"
                 self.append_widget(self.sqaure, {WidgetDataType.POSITION: [320, 200, 1, 420, 300, 1],
                                              WidgetDataType.COLOUR: [255, 255, 255, 255], WidgetDataType.SHADER_PASS: 2,
                                              WidgetDataType.SHAPE: -1,
@@ -156,6 +156,7 @@ class GSGUiManager:
             if key not in self.text_ids:
                 self.text_ids[key] = self.next_text_id
                 self.text.append(text)
+                dbg(f"{text} -> {self.next_text_id}")
                 self.widget_data[WidgetDataType.TEXT_ID][widget_id] = self.next_text_id
                 text_heigt: int = key[1]
                 self.font_manager.render_text(text, "Font", text_heigt, self.next_text_id)
@@ -186,7 +187,9 @@ class GSGUiManager:
             if key not in self.text_ids:
                 self.text_ids[key] = self.next_text_id
                 self.text.append(text)
+                dbg(f"{text} -> {self.next_text_id}")
                 self.widget_data[WidgetDataType.TEXT_ID][widget_id] = self.next_text_id
+                dbg(f"{self.widget_data[WidgetDataType.TEXT_ID][widget_id]} -> {self.next_text_id}")
                 text_heigt: int = key[1]
                 print(f"this is the text?{text} {text_heigt} {self.next_text_id}")
                 self.font_manager.render_text(text, "Font", text_heigt, self.next_text_id)

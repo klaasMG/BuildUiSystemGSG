@@ -42,7 +42,6 @@ void main() {
     }
     else if(widget.text_id != -1){
         int text_id = widget.text_id;
-        ivec4 textbox = widget_text_box[text_id];
     } else{
         colour = vec4(
         col_to_ndc(colour_255.x),

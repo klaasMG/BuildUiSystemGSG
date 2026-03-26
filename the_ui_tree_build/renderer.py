@@ -7,6 +7,8 @@ from PySide6.QtCore import QTimer
 import numpy as np
 from OpenGL.GL import *
 from enum import Enum
+
+from the_ui_tree_build.print_wrapper import dbg
 from widget_data import WidgetDataType
 from PIL import Image
 from event_system import event_system, EventQueue, EventTypeEnum
@@ -48,7 +50,7 @@ class GSGRenderSystem(QOpenGLWidget):
                                                  WidgetDataType.ASSETS_ID: (self.widget_max, np.int32),
                                                  WidgetDataType.TEXT_ID: (self.widget_max, np.int32),
                                                  WidgetDataType.PARENT: (self.widget_max, np.int32),})
-        self.text_boxes: dict = {WidgetDataType.TEXT_BOXES: np.zeros(self.widget_max * 4, dtype=np.int32),}
+        self.text_boxes: dict = {WidgetDataType.TEXT_BOXES: np.array([], dtype=np.int32),}
         self.is_counting = False
         self.frame_times: list[float] = []
         self.real_time: list[float] = []
@@ -187,9 +189,14 @@ class GSGRenderSystem(QOpenGLWidget):
             data = self.GSG_gui_system.font_manager.get_render_info()
             has_changed = data[1]
             if has_changed:
+                text_boxes_list = data[0]
                 self.text_texture_atlas = deepcopy(self.GSG_gui_system.font_manager.font_map_image)
+                self.text_boxes[WidgetDataType.TEXT_BOXES] = np.array(text_boxes_list, dtype=np.int32)
+                self.text_texture_atlas.save("kjghgyt.png", "PNG")
+                dbg("ll")
         self.GSG_gui_system.font_manager.text_lock.release()
         if has_changed:
+            dbg("po")
             self.text_atlas_copy.resend(self.text_texture_atlas)
         
         self.GSG_gui_system.pos_update()
@@ -401,6 +408,7 @@ class GSGRenderSystem(QOpenGLWidget):
             if not buffer_id:
                 return
             array = self.text_boxes[data_enum]
+            print(data_enum)
         
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer_id)
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, array.nbytes, array)

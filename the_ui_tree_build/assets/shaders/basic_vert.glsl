@@ -28,7 +28,7 @@ layout(std430, binding = 4) buffer AssetId {
 };
 
 layout(std430, binding = 5) buffer TextId {
-    int widget_textid[];
+    int widget_text_id[];
 };
 
 layout(std430, binding = 8) buffer Parent {
@@ -56,7 +56,7 @@ ivec4 get_colour(int index){
 void main() {
     vIndex = gl_VertexID;
     Widget w = Widget(ivec3(get_position(vIndex,0),get_position(vIndex,1),get_position(vIndex,2)),ivec3(get_position(vIndex,3),get_position(vIndex,4),get_position(vIndex,5)),
-    widget_shaderpass[vIndex],get_colour(vIndex),widget_shape[vIndex], widget_parent[vIndex],widget_assetid[vIndex],widget_textid[vIndex]);
+    widget_shaderpass[vIndex],get_colour(vIndex),widget_shape[vIndex], widget_parent[vIndex],widget_assetid[vIndex],widget_text_id[vIndex]);
     widget = w;
     vUV = aUV;
     vec4 Position = vec4(pos_to_ndc(640,center_pos(w.pos_one.x, w.pos_two.x)),pos_to_ndc(480,center_pos(w.pos_one.y, w.pos_two.y)), 0.0, 1.0);
