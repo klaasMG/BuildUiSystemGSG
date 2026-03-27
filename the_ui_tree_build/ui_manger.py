@@ -102,7 +102,7 @@ class GSGUiManager:
         while self.running:
             if not self.square_exist:
                 self.sqaure = GSGWidget(parent=self.root)
-                path_or_data = "assets/images/pattern.png"
+                path_or_data = "ass"
                 self.append_widget(self.sqaure, {WidgetDataType.POSITION: [320, 200, 1, 420, 300, 1],
                                              WidgetDataType.COLOUR: [255, 255, 255, 255], WidgetDataType.SHADER_PASS: 2,
                                              WidgetDataType.SHAPE: -1,

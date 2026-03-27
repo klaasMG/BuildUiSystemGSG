@@ -42,6 +42,12 @@ void main() {
     }
     else if(widget.text_id != -1){
         int text_id = widget.text_id;
+        ivec4 text_box = widget_text_box[text_id];
+        int pixel_pos_x = FragPosInt.x - widget.pos_one.x + text_box[0];
+        int pixel_pos_y = FragPosInt.y - widget.pos_one.y + text_box[1];
+        vec4 false_colour = vec4(col_to_ndc(colour_255.x), col_to_ndc(colour_255.y), col_to_ndc(colour_255.z), col_to_ndc(colour_255.w));
+        float p = texelFetch(uTextAtlas, ivec2(pixel_pos_x,pixel_pos_y), 0).r;
+        colour = false_colour * p;
     } else{
         colour = vec4(
         col_to_ndc(colour_255.x),

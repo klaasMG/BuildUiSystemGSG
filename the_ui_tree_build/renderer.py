@@ -1,18 +1,13 @@
 import time
 from copy import deepcopy
-
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
-from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import QTimer
 import numpy as np
 from OpenGL.GL import *
 from enum import Enum
-
-from the_ui_tree_build.print_wrapper import dbg
+from print_wrapper import dbg
 from widget_data import WidgetDataType
 from PIL import Image
 from event_system import event_system, EventQueue, EventTypeEnum
-import sys
 from PassSystem import ShaderPassData, Texture, set_glActiveTexture, TextureType
 from Uniform_Registry import uniform_registry, UniformTypes
 Image.MAX_IMAGE_PIXELS = None
@@ -51,7 +46,7 @@ class GSGRenderSystem(QOpenGLWidget):
                                                  WidgetDataType.TEXT_ID: (self.widget_max, np.int32),
                                                  WidgetDataType.PARENT: (self.widget_max, np.int32),})
         self.text_boxes: dict = {WidgetDataType.TEXT_BOXES: np.array([], dtype=np.int32),}
-        self.is_counting = False
+        self.is_counting = True
         self.frame_times: list[float] = []
         self.real_time: list[float] = []
         self.height_texture = None
@@ -98,7 +93,7 @@ class GSGRenderSystem(QOpenGLWidget):
         self.init_textures(width, height)
     
     def initializeGL(self):
-        print("initializeGL")
+        dbg("initializeGL")
         time_start = time.time()
         width = self.width()
         height = self.height()
@@ -166,13 +161,13 @@ class GSGRenderSystem(QOpenGLWidget):
         
         self.init_SSBOs()
         time_finish = time_start - time.time()
-        print(time_finish)
+        dbg(time_finish)
     
     def paintGL(self):
         if self.is_counting:
             if len(self.real_time) > 1:
                 self.frame_times.append(time.time() - self.real_time[-1])
-                print(time.time() - self.real_time[-1])
+                dbg(time.time() - self.real_time[-1])
             else:
                 self.frame_times.append(0)
             self.real_time.append(time.time())
@@ -239,6 +234,7 @@ class GSGRenderSystem(QOpenGLWidget):
         
         glUseProgram(shader_pass.program)
         shader_pass.set_atlas("uAtlas", shader_pass.program)
+        uniform_registry.set_uniform("uTextAtlas", shader_pass.program)
         glBindVertexArray(shader_pass.vao)
         
         glDrawArrays(GL_POINTS, 0, self.widget_max)
@@ -323,7 +319,7 @@ class GSGRenderSystem(QOpenGLWidget):
         glBindImageTexture(0,self.height_texture,0,GL_FALSE,0,GL_READ_WRITE,GL_R32UI)
     
     def init_FBOs(self, width, height, shader_pass):
-        print("this is here")
+        dbg("this is here")
         shader_pass.assign_fbo()
         glBindFramebuffer(GL_FRAMEBUFFER, shader_pass.fbo)
         
@@ -408,7 +404,6 @@ class GSGRenderSystem(QOpenGLWidget):
             if not buffer_id:
                 return
             array = self.text_boxes[data_enum]
-            print(data_enum)
         
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer_id)
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, array.nbytes, array)
@@ -542,16 +537,3 @@ class GSGRenderSystem(QOpenGLWidget):
     def hideEvent(self, e):
         self.GSG_gui_system.capture_input = False
         super().hideEvent(e)
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    win = GSGRenderSystem(None)
-    win.resize(800, 600)
-    win.show()
-    
-    # Auto-exit after 2 seconds to test stability
-    QTimer.singleShot(2000, app.quit)
-    
-    app.exec_()
-    print("✅ Test finished without crash.")

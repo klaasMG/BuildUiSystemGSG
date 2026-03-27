@@ -3,6 +3,7 @@ from font_holder import Font
 # noinspection PyUnresolvedReferences
 from GridPacker import TextPacker, PlacedRect
 from PIL import Image
+Transpose = Image.Transpose
 from pathlib import Path
 from hold_lock import HoldLock
 
@@ -67,7 +68,7 @@ class FontManager:
             
             cursor_x += advance
         
-        self.update_render_image(text_image, text_id)
+        self.update_render_image(text_image.transpose(Transpose.FLIP_TOP_BOTTOM), text_id)
     
     def update_render_image(self, text_image: Image.Image, text_id: int):
         width, height = text_image.size
