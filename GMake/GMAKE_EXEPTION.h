@@ -19,7 +19,7 @@ public:
         debug = debug_input;
         call_stack = std::vector<std::string>();
     }
-    void send(const int code, const std::optional<std::string>& helper_print) const {
+    void error(const int code, const std::optional<std::string>& helper_print) const {
         if (debug){
             std::cout << "call stack: " << std::endl;
             int call_num = 0;

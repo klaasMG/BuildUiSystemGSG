@@ -10,6 +10,7 @@
 #include <memory>
 #include <ranges>
 #include <unordered_set>
+#include <windows.h>
 #define PRINT(text) std::cout << text << std::endl
 
 namespace fs = std::filesystem;
@@ -18,6 +19,96 @@ fs::path current_dir;
 bool debug = false;
 GMAKE_EXCEPTION ExceptionHandler = GMAKE_EXCEPTION{debug};
 std::unordered_set<std::string_view> allowed_flags = {"-debug",};
+
+std::string run_command(const fs::path& cmd_path) {
+    // mutable command buffer
+    std::string cmd = cmd_path.string();
+    std::vector<char> cmd_buf(cmd.begin(), cmd.end());
+    cmd_buf.push_back('\0');
+
+    // pipe
+    HANDLE readPipe = NULL, writePipe = NULL;
+    SECURITY_ATTRIBUTES sa{};
+    sa.nLength = sizeof(sa);
+    sa.bInheritHandle = TRUE;
+
+    CreatePipe(&readPipe, &writePipe, &sa, 0);
+
+    // make sure read end is NOT inherited
+    SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0);
+
+    // startup info
+    STARTUPINFOA si{};
+    si.cb = sizeof(si);
+    si.dwFlags = STARTF_USESTDHANDLES;
+    si.hStdOutput = writePipe;
+    si.hStdError  = writePipe;
+    si.hStdInput  = NULL;
+
+    PROCESS_INFORMATION pi{};
+
+    // create process
+    if (!CreateProcessA(
+        NULL,
+        cmd_buf.data(),
+        NULL, NULL,
+        TRUE,
+        0,
+        NULL, NULL,
+        &si, &pi
+    )) {
+        CloseHandle(readPipe);
+        CloseHandle(writePipe);
+        return "";
+    }
+
+    // parent doesn't need write end
+    CloseHandle(writePipe);
+
+    // read output
+    std::string output;
+    char buffer[4096];
+    DWORD bytesRead;
+
+    while (true) {
+        BOOL success = ReadFile(readPipe, buffer, sizeof(buffer), &bytesRead, NULL);
+        if (!success || bytesRead == 0) break;
+        output.append(buffer, bytesRead);
+    }
+
+    // wait for process
+    WaitForSingleObject(pi.hProcess, INFINITE);
+
+    // cleanup
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    CloseHandle(readPipe);
+
+    return output;
+}
+
+std::string trim(std::string s) {
+    // left trim
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(),
+        [](unsigned char ch) { return !std::isspace(ch); }));
+
+    // right trim
+    s.erase(std::find_if(s.rbegin(), s.rend(),
+        [](unsigned char ch) { return !std::isspace(ch); }).base(), s.end());
+
+    return s;
+}
+
+std::pair<std::string, std::string> split_once(const std::string& s, char delim) {
+    size_t pos = s.find(delim);
+    if (pos == std::string::npos)
+        return {s, ""};
+
+    return {
+        s.substr(0, pos),
+        s.substr(pos + 1)
+    };
+}
 
 GMAKEConfig runGMAKEFunction(const std::string& function_name, const std::vector<std::string>& function_args, GMAKEConfig config) {
     ExceptionHandler.add_to_call_stack(function_name);
@@ -46,14 +137,63 @@ GMAKEConfig runGMAKEFunction(const std::string& function_name, const std::vector
 	}
 
 	case GMakeFunction::EXTEND_STANDARD:{
-	    for (const std::string arg : function_args){
+	    for (const std::string& arg : function_args){
 	        config.StandardExtensions.emplace_back(arg);
 	    }
 	    break;
 	}
 
+	case GMakeFunction::SSBO_LAYOUT_BINDING:{
+	    const std::string& program_name = function_args[0];
+        if (program_name.empty()){
+            ExceptionHandler.error(2,"No program given");
+        }
+	    fs::path path_program_build_ssbo_layout = config.ProjectDir / program_name;
+	    std::string output = run_command(path_program_build_ssbo_layout);
+
+	    std::istringstream stream(output);
+	    std::string line;
+	    std::map<std::string, std::map<std::string, uint64_t>> mappings;
+	    bool has_pending = false;
+	    while (true) {
+	        if (!has_pending) {
+	            if (!std::getline(stream, line)){break;}
+	        }
+	        else {
+	            has_pending = false;
+	        }
+	        line = trim(line);
+	        std::pair<std::string, std::string> key_value = split_once(line, ':');
+
+	        if (key_value.first == "header" && !isdigit(key_value.second[0])) {
+	            std::string key_to_mapping = key_value.second;
+	            std::map<std::string, uint64_t> mapping;
+
+	            while (std::getline(stream, line)) {
+	                line = trim(line);
+	                std::pair<std::string, std::string> kv = split_once(line, ':');
+
+	                if (key_value.first == "header" && !isdigit(key_value.second[0])) {
+	                    has_pending = true; // reuse this line in outer loop
+	                    break;
+	                }
+	                std::string key = key_value.first;
+	                key = trim(key);
+	                uint64_t value = std::stoull(key);
+                    if (mapping.contains(key)){
+                        ExceptionHandler.error(2,"Key already exists");
+                    }
+	                mapping.insert_or_assign(key, value);
+	            }
+	            mappings.insert_or_assign(key_to_mapping, mapping);
+	        }
+	    }
+	    config.SSBO_key_to_value = mappings;
+	    break;
+	}
+
 	case GMakeFunction::UNKNOWN:
-		ExceptionHandler.send(1, "Function is not found" + function_name);
+		ExceptionHandler.error(1, "Function is not found" + function_name);
 		break;
 	}
 
@@ -208,6 +348,7 @@ int main(int argc, char* argv[]) {
 	    }
 	    std::cout << config.ProjectDir << std::endl;
 	    include_run("path", config);
+	    //ssbo_layout_bindings();
 	}
 	else{
 		std::cout << "wrong number of arguments" << std::endl;

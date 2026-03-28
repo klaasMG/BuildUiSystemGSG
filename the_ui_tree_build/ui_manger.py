@@ -102,12 +102,12 @@ class GSGUiManager:
         while self.running:
             if not self.square_exist:
                 self.sqaure = GSGWidget(parent=self.root)
-                path_or_data = "aty"
+                path_or_data = "yes"
                 self.append_widget(self.sqaure, {WidgetDataType.POSITION: [320, 200, 1, 420, 300, 1],
                                              WidgetDataType.COLOUR: [255, 255, 25, 255], WidgetDataType.SHADER_PASS: 2,
                                              WidgetDataType.SHAPE: -1,
                                              WidgetDataType.PATH_OR_DATA: path_or_data,
-                                             WidgetDataType.ASSET_OR_TEXT: ""})
+                                             WidgetDataType.ASSET_OR_TEXT: "text"})
                 self.square_exist = True
             time.sleep(0.1)
     
