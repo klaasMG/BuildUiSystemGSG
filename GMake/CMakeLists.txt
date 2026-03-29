@@ -15,6 +15,10 @@ set_target_properties(GMake PROPERTIES
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+set_target_properties(GMake PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY
+        ${CMAKE_CURRENT_SOURCE_DIR})
+
 if(MINGW)
     target_link_libraries(GMake PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()

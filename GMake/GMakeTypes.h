@@ -27,7 +27,7 @@ struct GMAKEConfig {
     fs::path ProjectDir;
     std::map<std::string, std::vector<fs::path>> ShaderPrograms;
     std::vector<fs::path> StandardExtensions;
-    std::map<std::string, std::map<std::string, uint64_t>> SSBO_key_to_value;
+    std::map<std::string, std::map<std::string, uint64_t>> SSBO_key_to_value = {};
 };
 
 inline GMakeFunction parseFunction(const std::string& name) {

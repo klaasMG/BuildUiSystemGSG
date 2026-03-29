@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "TokeniserGMAKE.h"
 #include "SimpleASTGMAKE.h"
 #include "GMAKE_EXEPTION.h"
@@ -12,7 +13,16 @@
 #include <unordered_set>
 #include <windows.h>
 #define PRINT(text) std::cout << text << std::endl
-
+#define ASSERT_MSG(cond, msg)                         \
+do {                                              \
+    if (!(cond)) {                                \
+        std::cerr << "Assertion failed: " << msg   \
+        << "\nFile: " << __FILE__       \
+        << "\nLine: " << __LINE__       \
+        << std::endl;                  \
+        std::abort();                             \
+    }                                             \
+    } while (0)
 namespace fs = std::filesystem;
 
 fs::path current_dir;
@@ -173,13 +183,13 @@ GMAKEConfig runGMAKEFunction(const std::string& function_name, const std::vector
 	                line = trim(line);
 	                std::pair<std::string, std::string> kv = split_once(line, ':');
 
-	                if (key_value.first == "header" && !isdigit(key_value.second[0])) {
+	                if (kv.first == "header" && !isdigit(kv.second[0])) {
 	                    has_pending = true; // reuse this line in outer loop
 	                    break;
 	                }
-	                std::string key = key_value.first;
+	                std::string key = kv.first;
 	                key = trim(key);
-	                uint64_t value = std::stoull(key);
+	                uint64_t value = std::stoull(kv.second);
                     if (mapping.contains(key)){
                         ExceptionHandler.error(2,"Key already exists");
                     }
@@ -289,6 +299,140 @@ void include_run(const fs::path& shader_directory, const GMAKEConfig &config){
 		PRINT("Writing to: " << write_file.first);
 		WriteFile(write_file.first, write_file.second);
 	}
+}
+
+struct SSBOBlock {
+    std::string text;
+    size_t start;
+    size_t end; // one past the last character (like substr)
+};
+
+std::vector<SSBOBlock> extractSSBOs(const std::string& src) {
+    std::vector<SSBOBlock> result;
+    size_t pos = 0;
+
+    while ((pos = src.find("layout(", pos)) != std::string::npos) {
+        size_t start = pos;
+
+        // --- match layout(...) ---
+        size_t i = pos + 7;
+        int parenDepth = 1;
+
+        while (i < src.size() && parenDepth > 0) {
+            if (src[i] == '(') parenDepth++;
+            else if (src[i] == ')') parenDepth--;
+            i++;
+        }
+        if (parenDepth != 0) break;
+
+        // skip whitespace
+        size_t after = src.find_first_not_of(" \t\r\n", i);
+
+        // must be "buffer"
+        if (after == std::string::npos ||
+            src.compare(after, 6, "buffer") != 0) {
+            pos = i;
+            continue;
+            }
+
+        // find '{'
+        size_t braceStart = src.find('{', after);
+        if (braceStart == std::string::npos) break;
+
+        // --- match { ... } ---
+        size_t j = braceStart + 1;
+        int braceDepth = 1;
+
+        while (j < src.size() && braceDepth > 0) {
+            if (src[j] == '{') braceDepth++;
+            else if (src[j] == '}') braceDepth--;
+            j++;
+        }
+        if (braceDepth != 0) break;
+
+        // find ';' after closing '}'
+        size_t semicolon = src.find(';', j);
+        if (semicolon == std::string::npos) break;
+
+        size_t end = semicolon + 1;
+
+        result.push_back({
+            src.substr(start, end - start),
+            start,
+            end
+        });
+
+        pos = end;
+    }
+
+    return result;
+}
+
+std::string replace_first(const std::string& input,const std::string& sub,const std::string& repl){
+    std::string s = input;
+    size_t pos = s.find(sub);
+    if (pos != std::string::npos) {
+        s.replace(pos, sub.length(), repl);
+    }
+    return s;
+}
+
+void do_layout_bindings(const GMAKEConfig &config){
+    for (const std::pair<const std::string, std::vector<fs::path>>& shader : config.ShaderPrograms){
+        std::vector<fs::path> shaders = shader.second;
+        for (const fs::path& file : shaders){
+            fs::path actual_file_path;
+            if (file.is_absolute()){
+                actual_file_path = file;
+            }
+            else{
+                actual_file_path = config.ProjectDir / file;
+            }
+
+            std::string shader_content = ReadFilePath(actual_file_path);
+            std::vector<SSBOBlock> ssbo_blocks = extractSSBOs(shader_content);
+            for ( SSBOBlock& ssbo_block : ssbo_blocks){
+                std::string ssbo_content = ssbo_block.text;
+                std::string target = "binding";
+                size_t pos = 0;
+                pos = ssbo_content.find(target);
+                uint64_t target_lenght = 7;
+                ASSERT_MSG(pos != std::string::npos, "binding must be in the return of find ssbo this is a bug");
+                bool is_eqaul_happend = false;
+                for (uint64_t i = pos + target_lenght; i < ssbo_content.size(); i++){
+                    if (is_eqaul_happend == false && ssbo_content[i] == '='){
+                        is_eqaul_happend = true;
+                    }
+                    if (is_eqaul_happend == true && isalpha(ssbo_content[i])){
+                        char first_header = ssbo_content[i];
+                        std::string header_name(1, first_header);
+                        while (i < ssbo_content.size() && isalpha(ssbo_content[i])){
+                            header_name += ssbo_content[i];
+                            i++;
+                        }
+                        std::map<std::string, std::map<std::string, uint64_t>> the_ssbo_key_to_value= config.SSBO_key_to_value;
+                        std::map<std::string, uint64_t> atribute_mapping = the_ssbo_key_to_value.at(header_name);
+                        char dot = ssbo_content[i];
+                        i++;
+                        if (dot != '.'){
+                            ExceptionHandler.error(4, "after the header there needs to be a dot after that there is the atribute");
+                        }
+                        std::string atribute = std::string();
+                        while (i < ssbo_content.size() && isalpha(ssbo_content[i])){
+                            atribute += ssbo_content[i];
+                            i++;
+                        }
+                        std::string ssbo_content_old = ssbo_content;
+                        uint64_t value = atribute_mapping.at(atribute);
+                        ssbo_content = replace_first(ssbo_content, atribute, std::to_string(value));
+                        shader_content = replace_first(shader_content, ssbo_content_old, ssbo_content);
+                    }
+                }
+                fs::path parent_actual_file_path = config.ProjectDir.parent_path();
+                WriteFile(parent_actual_file_path / "preprocessed_shaders" / file, shader_content);
+            }
+        }
+    }
 }
 
 std::vector<std::string> make_args(const std::vector<IdentNode>& args){
