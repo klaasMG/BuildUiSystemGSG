@@ -1,117 +1,0 @@
-#version 430 core
-struct Widget{
-    ivec3 pos_one;
-    ivec3 pos_two;
-    int shader_pass;
-    ivec4 colour;
-    int shape;
-    int parent;
-    int asset_id;
-    int text_id;
-};
-
-float pos_to_ndc(int size_any,int postion_any){
-    float vertex_position = (float(postion_any) / float(size_any)) * 2.0 - 1.0;
-    return vertex_position;
-}
-
-float pos_to_ndc(int size_any,float postion_any){
-    float vertex_position = (float(postion_any) / size_any) * 2.0 - 1.0;
-    return vertex_position;
-}
-
-float col_to_ndc(int col_any){
-    float colour_ndc = float(col_any) / 255.0;
-    return colour_ndc;
-}
-
-float center_pos(int coord_one, int coord_two){
-    int double_coord = coord_one + coord_two;
-    float average_coord = double_coord / 2.0f;
-    return average_coord;
-}
-
-int get_length(int x_one,int x_two){
-    return abs(x_two - x_one);
-}
-
-uint pack2x16(uint a, uint b) {
-    return (a & 0xFFFFu) | ((b & 0xFFFFu) << 16);
-}
-
-
-uniform sampler2D uAtlas;
-uniform sampler2D uTextAtlas; //a r channel is used here
-
-layout(std430, binding = 11) buffer TextBoxes {
-    ivec4 widget_text_box[];
-};
-
-in vec2 vUV;
-flat in int vIndex;
-flat in Widget widget;
-
-layout(location = 0) out vec4 outColor;
-layout(location = 1) out uint idDepth;
-layout(r32ui, binding = 0) uniform uimage2D heightMap;
-
-void main() {
-    // haal kleur van widget en zet naar 0..1
-    uint height = widget.pos_one.z;
-    uint int_height = uint(height);
-    ivec4 colour_255 = widget.colour;
-    vec4 colour = vec4(0);
-    vec2 FragPos = gl_FragCoord.xy;
-    ivec2 FragPosInt = ivec2(int(FragPos.x),int(FragPos.y));
-    uint oldHeight = imageLoad(heightMap, FragPosInt).r;
-    uint prev = imageAtomicMax(heightMap, FragPosInt, int_height);
-    int pixel_pos_x = 0;
-    int pixel_pos_y = 0;
-    if (widget.asset_id != -1){
-        int asset_id = widget.asset_id;
-        int pixel_x = FragPosInt.x - widget.pos_one.x;
-        int pixel_y = FragPosInt.y - widget.pos_one.y;
-        pixel_pos_x = 256 * asset_id + pixel_x;
-        int image_row = asset_id / 32;
-        pixel_pos_x = pixel_pos_x - (image_row * 256);
-        pixel_pos_y = pixel_y;
-        pixel_pos_y = pixel_pos_y;
-        ivec2 pixel = ivec2(pixel_pos_x,pixel_pos_y);
-        colour = texelFetch(uAtlas, pixel, 0);
-    }
-    else if(widget.text_id != -1){
-        int text_id = widget.text_id;
-        ivec4 text_box = widget_text_box[text_id];
-        int pixel_pos_x = FragPosInt.x - widget.pos_one.x + text_box[0];
-        int pixel_pos_y = FragPosInt.y - widget.pos_one.y + text_box[1];
-        vec4 false_colour = vec4(col_to_ndc(colour_255.x), col_to_ndc(colour_255.y), col_to_ndc(colour_255.z), col_to_ndc(colour_255.w));
-        float p = texelFetch(uTextAtlas, ivec2(pixel_pos_x,pixel_pos_y), 0).r;
-        colour = false_colour * p;
-    } else{
-        colour = vec4(
-        col_to_ndc(colour_255.x),
-        col_to_ndc(colour_255.y),
-        col_to_ndc(colour_255.z),
-        col_to_ndc(colour_255.w));
-    }
-
-    if (FragPos.x < widget.pos_one.x) {
-        discard;
-    }
-    if (FragPos.x > widget.pos_two.x) {
-        discard;
-    }
-    if (FragPos.y < widget.pos_one.y) {
-        discard;
-    }
-    if (FragPos.y > widget.pos_two.y) {
-        discard;
-    }
-    if (prev > height) {
-        discard;
-    }
-    outColor = colour;
-    uint vUIndex = uint(vIndex);
-    uint height_id = pack2x16(height,vUIndex);
-    idDepth = height_id;
-}

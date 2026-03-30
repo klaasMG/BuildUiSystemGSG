@@ -271,7 +271,7 @@ void include_run(const fs::path& shader_directory, const GMAKEConfig &config){
 	std::map<fs::path, std::string> open_shader_files;
 	std::map<fs::path, std::string> open_include_files;
 
-	fs::path new_dir = config.ProjectDir.parent_path() / "preprocessed_shader";//preprocessed_shaders
+	fs::path new_dir = config.ProjectDir.parent_path() / "preprocessed_shaders";//preprocessed_shaders
 	if (!fs::exists(new_dir)) {
 		fs::create_directory(new_dir);
 	}
@@ -395,7 +395,7 @@ void run_layout_bindings(const GMAKEConfig &config){
         std::vector<fs::path> shaders = shader.second;
         for (const fs::path& file : shaders){
             fs::path actual_file_path;
-            actual_file_path = config.ProjectDir.parent_path() / "preprocessed_shader" / file.filename();
+            actual_file_path = config.ProjectDir.parent_path() / "preprocessed_shaders" / file.filename();
             std::string shader_content = ReadFilePath(actual_file_path);
             std::vector<SSBOBlock> ssbo_blocks = extractSSBOs(shader_content);
             for ( SSBOBlock& ssbo_block : ssbo_blocks){
@@ -460,7 +460,7 @@ void run_layout_bindings(const GMAKEConfig &config){
                 }
                 PRINT("gh");
                 fs::path parent_actual_file_path = config.ProjectDir.parent_path();
-                WriteFile(parent_actual_file_path / "preprocessed_shader" / file, shader_content); //preprocessed_shaders
+                WriteFile(parent_actual_file_path / "preprocessed_shaders" / file, shader_content); //preprocessed_shaders
             }
         }
     }
