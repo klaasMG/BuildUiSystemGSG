@@ -5,6 +5,10 @@ option(BUILD_CODE "Build libA" ON)
 option(BUILD_PCL "Build libB" ON)
 option(BUILD_GMAKE "Build libC" ON)
 
+message(WARNING "this is a hotfix and should be changed later")
+include_directories(${CMAKE_SOURCE_DIR}/lib/cpp)
+message(WARNING "hotfix en is here for the lib libraries")
+
 if(BUILD_GMAKE)
     add_subdirectory(GMake)
 endif()
@@ -16,6 +20,3 @@ endif()
 if(BUILD_PCL)
     add_subdirectory(PythonCompilerLibrary)
 endif()
-
-#add_executable(f_help the_ui_tree_build/assets/shaders/fgg.cpp)
-#target_link_options(f_help PRIVATE -static -static-libgcc -static-libstdc++)

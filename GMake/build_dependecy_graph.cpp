@@ -1,7 +1,7 @@
-#include <assert.h>
 #include "TokeniserGMAKE.h"
 #include "SimpleASTGMAKE.h"
-#include "GMAKE_EXEPTION.h"
+#include "assert_print.h"
+#include "GMAKE_EXCEPTION.h"
 #include "GMakeTypes.h"
 #include "file_utils.h"
 #include <iostream>
@@ -12,17 +12,6 @@
 #include <ranges>
 #include <unordered_set>
 #include <windows.h>
-#define PRINT(text) std::cout << text << std::endl
-#define ASSERT_MSG(cond, msg)                         \
-do {                                              \
-    if (!(cond)) {                                \
-        std::cerr << "Assertion failed: " << msg   \
-        << "\nFile: " << __FILE__       \
-        << "\nLine: " << __LINE__       \
-        << std::endl;                  \
-        std::abort();                             \
-    }                                             \
-    } while (0)
 namespace fs = std::filesystem;
 
 fs::path current_dir;
