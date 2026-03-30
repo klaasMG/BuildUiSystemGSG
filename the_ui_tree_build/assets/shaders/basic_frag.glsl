@@ -4,7 +4,7 @@
 uniform sampler2D uAtlas;
 uniform sampler2D uTextAtlas; //a r channel is used here
 
-layout(std430, binding = 11) buffer TextBoxes {
+layout(std430, binding = WidgetDataType.TEXT_BOXES) buffer TextBoxes {
     ivec4 widget_text_box[];
 };
 

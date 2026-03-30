@@ -36,6 +36,7 @@ public:
                     ident.push_back(c);
                 }
                 tokens.push_back(Token(TokenType::Identifier, ident));
+                std::cout << ident << std::endl;
             }
             else if (is_digit()){
                 std::string num = "";

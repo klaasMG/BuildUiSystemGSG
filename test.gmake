@@ -1,3 +1,4 @@
 SetProjectDirectory(the_ui_tree_build/assets/shaders);
 SetProgram(ProgramOne, basic_vert.glsl, basic_frag.glsl);
 SetProgram(ProgramTwo, final_frag.glsl, final_vert.glsl);
+SetLayoutBinding(f_help.exe);

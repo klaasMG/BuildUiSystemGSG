@@ -12,12 +12,7 @@ add_executable(GMake build_dependecy_graph.cpp
 
 set_target_properties(GMake PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY
-        ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-set_target_properties(GMake PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY
-        ${CMAKE_CURRENT_SOURCE_DIR})
+        C:\\Users\\klaas\\PycharmProjects\\BuildUiSystemGSG)
 
 if(MINGW)
     target_link_libraries(GMake PRIVATE -static-libgcc -static-libstdc++ -static)

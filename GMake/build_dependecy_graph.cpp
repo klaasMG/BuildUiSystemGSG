@@ -154,12 +154,18 @@ GMAKEConfig runGMAKEFunction(const std::string& function_name, const std::vector
 	}
 
 	case GMakeFunction::SSBO_LAYOUT_BINDING:{
-	    const std::string& program_name = function_args[0];
-        if (program_name.empty()){
+	    PRINT(function_args.size());
+        if (function_args.empty()){
             ExceptionHandler.error(2,"No program given");
         }
-	    fs::path path_program_build_ssbo_layout = config.ProjectDir / program_name;
+        const std::string& program_name = function_args[0];
+
+        std::cerr << "SSBO layout binding: " << std::to_string(program_name.size()) << std::endl;
+        PRINT(program_name);
+        fs::path path_program_build_ssbo_layout = config.ProjectDir / program_name;
 	    std::string output = run_command(path_program_build_ssbo_layout);
+
+	    PRINT("this is the output:" + output);
 
 	    std::istringstream stream(output);
 	    std::string line;
@@ -265,7 +271,7 @@ void include_run(const fs::path& shader_directory, const GMAKEConfig &config){
 	std::map<fs::path, std::string> open_shader_files;
 	std::map<fs::path, std::string> open_include_files;
 
-	fs::path new_dir = config.ProjectDir.parent_path() / "preprocessed_shaders";
+	fs::path new_dir = config.ProjectDir.parent_path() / "preprocessed_shader";//preprocessed_shaders
 	if (!fs::exists(new_dir)) {
 		fs::create_directory(new_dir);
 	}
@@ -377,18 +383,19 @@ std::string replace_first(const std::string& input,const std::string& sub,const 
     return s;
 }
 
-void do_layout_bindings(const GMAKEConfig &config){
+char nextNonSpace(const std::string& s, size_t pos) {
+    size_t i = pos + 1;  // start after current char
+    while (i < s.size() && std::isspace(static_cast<unsigned char>(s[i]))) {
+        ++i;
+    }
+    return (i < s.size()) ? s[i] : '\0'; // '\0' if none found
+}
+void run_layout_bindings(const GMAKEConfig &config){
     for (const std::pair<const std::string, std::vector<fs::path>>& shader : config.ShaderPrograms){
         std::vector<fs::path> shaders = shader.second;
         for (const fs::path& file : shaders){
             fs::path actual_file_path;
-            if (file.is_absolute()){
-                actual_file_path = file;
-            }
-            else{
-                actual_file_path = config.ProjectDir / file;
-            }
-
+            actual_file_path = config.ProjectDir.parent_path() / "preprocessed_shader" / file.filename();
             std::string shader_content = ReadFilePath(actual_file_path);
             std::vector<SSBOBlock> ssbo_blocks = extractSSBOs(shader_content);
             for ( SSBOBlock& ssbo_block : ssbo_blocks){
@@ -398,38 +405,62 @@ void do_layout_bindings(const GMAKEConfig &config){
                 pos = ssbo_content.find(target);
                 uint64_t target_lenght = 7;
                 ASSERT_MSG(pos != std::string::npos, "binding must be in the return of find ssbo this is a bug");
-                bool is_eqaul_happend = false;
-                for (uint64_t i = pos + target_lenght; i < ssbo_content.size(); i++){
-                    if (is_eqaul_happend == false && ssbo_content[i] == '='){
-                        is_eqaul_happend = true;
-                    }
-                    if (is_eqaul_happend == true && isalpha(ssbo_content[i])){
-                        char first_header = ssbo_content[i];
-                        std::string header_name(1, first_header);
-                        while (i < ssbo_content.size() && isalpha(ssbo_content[i])){
-                            header_name += ssbo_content[i];
-                            i++;
-                        }
-                        std::map<std::string, std::map<std::string, uint64_t>> the_ssbo_key_to_value= config.SSBO_key_to_value;
-                        std::map<std::string, uint64_t> atribute_mapping = the_ssbo_key_to_value.at(header_name);
-                        char dot = ssbo_content[i];
-                        i++;
-                        if (dot != '.'){
-                            ExceptionHandler.error(4, "after the header there needs to be a dot after that there is the atribute");
-                        }
-                        std::string atribute = std::string();
-                        while (i < ssbo_content.size() && isalpha(ssbo_content[i])){
-                            atribute += ssbo_content[i];
-                            i++;
-                        }
-                        std::string ssbo_content_old = ssbo_content;
-                        uint64_t value = atribute_mapping.at(atribute);
-                        ssbo_content = replace_first(ssbo_content, atribute, std::to_string(value));
-                        shader_content = replace_first(shader_content, ssbo_content_old, ssbo_content);
-                    }
+                size_t binding_pos = ssbo_content.find("binding");
+                ASSERT_MSG(binding_pos != std::string::npos, "binding not found");
+
+                size_t eq_pos = ssbo_content.find('=', binding_pos);
+                ASSERT_MSG(eq_pos != std::string::npos, "binding missing '='");
+
+                // find first non-space after '='
+                size_t i = eq_pos + 1;
+                while (i < ssbo_content.size() && std::isspace(static_cast<unsigned char>(ssbo_content[i]))) {
+                    i++;
                 }
+
+                if (i >= ssbo_content.size()) {
+                    continue;
+                }
+
+                // ✅ STOP if numeric binding
+                if (std::isdigit(static_cast<unsigned char>(ssbo_content[i]))) {
+                    PRINT("Numeric binding found, skipping");
+                    continue;
+                }
+
+                // ✅ Parse symbolic binding
+                if (std::isalpha(static_cast<unsigned char>(ssbo_content[i])) || static_cast<unsigned char>(ssbo_content[i]) == '_') {
+
+                    std::string header_name;
+                    while (i < ssbo_content.size() && std::isalpha(static_cast<unsigned char>(ssbo_content[i])) || static_cast<unsigned char>(ssbo_content[i]) == '_') {
+                        header_name += ssbo_content[i++];
+                    }
+
+                    PRINT("Header: " + header_name);
+
+                    if (i >= ssbo_content.size() || ssbo_content[i] != '.') {
+                        ExceptionHandler.error(4, "Expected '.' after header");
+                    }
+
+                    i++; // skip '.'
+
+                    std::string attribute;
+                    while (i < ssbo_content.size() && std::isalpha(static_cast<unsigned char>(ssbo_content[i])) || static_cast<unsigned char>(ssbo_content[i]) == '_') {
+                        attribute += ssbo_content[i++];
+                    }
+
+                    PRINT("Attribute: " + attribute);
+
+                    auto& mapping = config.SSBO_key_to_value.at(header_name);
+                    uint64_t value = mapping.at(attribute);
+
+                    std::string full_expr = header_name + "." + attribute;
+
+                    ssbo_content = replace_first(ssbo_content, full_expr, std::to_string(value));
+                    shader_content = replace_first(shader_content, ssbo_block.text, ssbo_content);
+                }
+                PRINT("gh");
                 fs::path parent_actual_file_path = config.ProjectDir.parent_path();
-                WriteFile(parent_actual_file_path / "preprocessed_shaders" / file, shader_content);
+                WriteFile(parent_actual_file_path / "preprocessed_shader" / file, shader_content); //preprocessed_shaders
             }
         }
     }
@@ -492,6 +523,7 @@ int main(int argc, char* argv[]) {
 	    }
 	    std::cout << config.ProjectDir << std::endl;
 	    include_run("path", config);
+	    run_layout_bindings(config);
 	    //ssbo_layout_bindings();
 	}
 	else{
