@@ -6,8 +6,7 @@ project(PCL)
 add_executable(PCL MainPCL.cpp
         Tokeniser.h
         tokens.h
-        AST_old.h
-        AST.h
-        AST.cpp
         GMakePythonParser.cpp
         GMakePythonParser.h)
+
+target_link_libraries(PCL common_lib)

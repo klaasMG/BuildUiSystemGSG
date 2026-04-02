@@ -5,9 +5,17 @@ option(BUILD_CODE "Build libA" ON)
 option(BUILD_PCL "Build libB" ON)
 option(BUILD_GMAKE "Build libC" ON)
 
-message(WARNING "this is a hotfix and should be changed later")
+message(STATUS "this is a hotfix and should be changed later")
 include_directories(${CMAKE_SOURCE_DIR}/lib/cpp)
-message(WARNING "hotfix en is here for the lib libraries")
+message(STATUS "hotfix en is here for the lib libraries")
+
+add_library(common_lib
+    lib/cpp/GMAKE_EXCEPTION.cpp
+)
+
+target_include_directories(common_lib PUBLIC
+    ${CMAKE_SOURCE_DIR}/lib/cpp
+)
 
 if(BUILD_GMAKE)
     add_subdirectory(GMake)

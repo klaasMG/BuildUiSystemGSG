@@ -4,8 +4,6 @@
 
 #ifndef SUPERBUILD_GMAKEPYTHONPARSER_H
 #define SUPERBUILD_GMAKEPYTHONPARSER_H
-#ifndef SUPERBUILD_AST_H
-#define SUPERBUILD_AST_H
 #include <string>
 #include <variant>
 #include <vector>
@@ -66,6 +64,11 @@ struct CollectionNode{
 struct ProgramNode{
     std::vector<size_t> lines;
 };
+
+struct BodyNode{
+    std::vector<size_t> lines;
+};
+
 struct FunctionNode{
     bool is_await;
     std::string name;
@@ -119,7 +122,7 @@ struct WithNode{
 };
 
 struct ImportNode{
-    size_t import;
+    std::vector<size_t> import;
     size_t alias;
     size_t from;
 };
@@ -149,29 +152,34 @@ using ExprNode = std::variant<BinaryExprNode, UnaryExprNode>;
 
 using Node = std::variant<NumberNode, StringNode, BinaryNode, IdentNode, UnaryExprNode, BinaryExprNode, CallExprNode,
                           AssignNode, CollectionNode ,ProgramNode ,FunctionNode,ClassNode ,IfNode ,WhileNode ,ForNode ,CaseNode ,MatchNode ,TryNode, WithNode, ImportNode, FStringNode, BreakNode,
-                          ContinueNode, AssertNode, AnnotationNode, BoolNode, ArgNode>;
+                          ContinueNode, AssertNode, AnnotationNode, BoolNode, ArgNode, BodyNode>;
 
 class Parser{
 public:
     Parser();
     std::vector<Node> program_parse_ast(const std::vector<token>& tokens);
 private:
-    size_t Node_pos;
-    std::vector<Node> AST;
-    uint64_t IndentLevel;
-    std::vector<token> Tokens;
-    uint64_t TokenPos;
+    size_t Node_pos = 0;
+    std::vector<Node> AST = {};
+    uint64_t IndentLevel = 0;
+    std::vector<token> Tokens = {};
+    uint64_t TokenPos = 0;
+    std::vector<Node> parse_code();
+    size_t parse_body();
     size_t parse_statement();
+    size_t parse_expression();
     size_t parse_class();
     size_t parse_import();
-    size_t parse_arguments();
+    std::vector<size_t> parse_arguments();
+    size_t parse_assignment();
     size_t parse_factor();
+    size_t parse_identifier(bool is_not_atribute_allowed = false);
     size_t push_node(const Node& node);
     void reset_parser();
     token get_token();
     token peek_token(const int& look_ahead = 0);
     bool match_token(const TokenType& type);
-    void expect_token(TokenType type);
+    token expect_token(TokenType type);
 };
-#endif //SUPERBUILD_AST_H
+
 #endif //SUPERBUILD_GMAKEPYTHONPARSER_H

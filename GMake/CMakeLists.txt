@@ -11,10 +11,10 @@ add_library(utils INTERFACE)
 add_executable(GMake build_dependecy_graph.cpp
         SimpleASTGMAKE.h
         Tokens.h
-        GMAKE_EXCEPTION.h
         file_utils.h
-        GMakeTypes.h
-        GMAKE_EXCEPTION.cpp)
+        GMakeTypes.h)
+
+target_link_libraries(GMake PRIVATE common_lib)
 
 set_target_properties(GMake PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY

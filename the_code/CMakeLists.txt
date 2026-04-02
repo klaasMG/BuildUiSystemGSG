@@ -16,6 +16,8 @@ include_directories(${Python3_INCLUDE_DIRS} ${PYBIND11_INCLUDE_DIR} the_code )
 add_library(event_struct SHARED
         event_struct.cpp)
 
+target_link_libraries(event_struct PRIVATE common_lib)
+
 # Link with Python library
 target_link_libraries(event_struct PRIVATE ${Python3_LIBRARIES})
 
@@ -24,6 +26,8 @@ set_target_properties(event_struct PROPERTIES PREFIX "" SUFFIX ".pyd")
 
 add_library(GridPacker SHARED
         GridPacker.cpp)
+
+target_link_libraries(GridPacker PRIVATE common_lib)
 
 target_link_libraries(GridPacker PRIVATE ${Python3_LIBRARIES})
 
@@ -36,6 +40,8 @@ set_target_properties(GridPacker PROPERTIES
 add_library(font_holder SHARED font_loader.cpp
         stb_treutype.h
 )
+
+target_link_libraries(font_holder PRIVATE common_lib)
 
 target_link_libraries(font_holder PRIVATE
         ${Python3_LIBRARIES}
@@ -51,6 +57,8 @@ set_target_properties(font_holder PROPERTIES
         ${CMAKE_CURRENT_SOURCE_DIR}/the_ui_tree_build)
 
 add_library(shader_preprocessing SHARED shader_preprocesing.cpp)
+
+target_link_libraries(shader_preprocessing PRIVATE common_lib)
 
 target_link_libraries(shader_preprocessing PRIVATE
         ${Python3_LIBRARIES}

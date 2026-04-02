@@ -8,6 +8,7 @@
 #include <map>
 #include <array>
 #include <cmath>
+#include <iostream>
 #include <stdexcept>
 
 #include "tokens.h"
@@ -33,7 +34,10 @@ public:
     std::vector<token> tokenise(const std::string& text, bool f_string = false){
         Text = text;
         std::vector<token> tokens;
+        std::cout << "tokenise:" << std::endl;
         while (peektoken() != '\0'){
+            char check = peektoken();
+            std::cout << check << std::endl;
             if (char c = peektoken();std::isalpha(c) || c == '_'){
                 std::string ident = ident_getter();
                 if (peektoken() == '"' || peektoken() == '\''){
@@ -94,6 +98,9 @@ public:
                     tokens.push_back(tok);
                 }
             }
+            else if (peektoken() == '\r'){
+                nexttoken();
+            }
             else if (peektoken() == '\n'){
                 if (!BracketDepth){
                     token tok;
@@ -117,7 +124,7 @@ public:
                 tokens.push_back(tok);
             }
             else if (peektoken() == '#'){
-                while (peektoken() != '\n' || peektoken() != '\0'){
+                while (peektoken() != '\n' && peektoken() != '\0'){
                     nexttoken();
                 }
             }
@@ -125,13 +132,17 @@ public:
                 nexttoken();
             }
             else if (peektoken() == '\\'){
-                while (peektoken() != '\n' || peektoken() != '\0'){
-                    if (peektoken() != ' ' || peektoken() != '\t') {
+                while (peektoken() != '\n' && peektoken() != '\0'){
+                    if (peektoken() != ' ' && peektoken() != '\t') {
                         throw std::runtime_error("Escape character expected");
                     }
+                    nexttoken();
                 }
             }
             else{
+                char cf = nexttoken();
+                int cfi = cf;
+                std::cout << cfi << std::endl;
                 throw std::runtime_error("Unexpected token");
             }
         }
@@ -354,7 +365,7 @@ private:
                     tokens.push_back(f_mid_tok);
                     str = std::string();
                     std::string sub_parse_fstring;
-                    while (peektoken() != '}'){
+                    while (peektoken() != '}' && peektoken() != '\0'){
                         char c1 = nexttoken();
                         sub_parse_fstring.push_back(c1);
                     }

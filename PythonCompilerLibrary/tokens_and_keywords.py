@@ -1,5 +1,10 @@
 import token
-
+import token as f
+if token is f:
+    print("why")
+if token == f:
+    print("what")
+L = f.tok_name
 ALL_TOKEN_TYPES = token.tok_name  # {id: name}
 
 # nice list of names

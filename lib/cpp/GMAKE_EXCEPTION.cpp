@@ -10,22 +10,22 @@ GMAKE_EXCEPTION::GMAKE_EXCEPTION(bool debug_input){
 
 void GMAKE_EXCEPTION::error(int code, const std::optional<std::string>& helper_print) const {
     if (debug) {
-        std::cout << "call stack:" << std::endl;
+        std::cerr << "call stack:" << std::endl;
         int call_num = 0;
         for (const std::string& call : call_stack) {
-            std::cout << "Function call number "
+            std::cerr << "Function call number "
                       << call_num++ << ": " << call << std::endl;
         }
     }
 
     if (!call_stack.empty()) {
-        std::cout << "Last call: " << call_stack.back() << std::endl;
+        std::cerr << "Last call: " << call_stack.back() << std::endl;
     } else {
-        std::cout << "Last call: <empty>" << std::endl;
+        std::cerr << "Last call: <empty>" << std::endl;
     }
 
     if (helper_print.has_value()) {
-        std::cout << helper_print.value() << std::endl;
+        std::cerr << helper_print.value() << std::endl;
     }
 
     std::cerr << "Exit code: " << code << std::endl;
@@ -57,7 +57,7 @@ void GMAKE_EXCEPTION::warning(const std::string& text, const WarningLevel& warni
         }
     }
     warnings.emplace(text, warning_level);
-    std::cout << warning_level_str << ": " << text << std::endl;
+    std::cerr << warning_level_str << ": " << text << std::endl;
 }
 
 void GMAKE_EXCEPTION::warning_summary(){
@@ -82,5 +82,7 @@ void GMAKE_EXCEPTION::warning_summary(){
             }
         }
     }
-
+    std::cerr << "Warnings: " << num_warnings << std::endl;
+    std::cerr << "Security Warnings: " << num_security << std::endl;
+    std::cerr << "Weak Warnings: " << num_weak_warnings << std::endl;
 }
