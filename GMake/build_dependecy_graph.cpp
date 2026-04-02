@@ -4,6 +4,7 @@
 #include "GMAKE_EXCEPTION.h"
 #include "GMakeTypes.h"
 #include "file_utils.h"
+#include "string_utils.h"
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -84,29 +85,6 @@ std::string run_command(const fs::path& cmd_path) {
     CloseHandle(readPipe);
 
     return output;
-}
-
-std::string trim(std::string s) {
-    // left trim
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(),
-        [](unsigned char ch) { return !std::isspace(ch); }));
-
-    // right trim
-    s.erase(std::find_if(s.rbegin(), s.rend(),
-        [](unsigned char ch) { return !std::isspace(ch); }).base(), s.end());
-
-    return s;
-}
-
-std::pair<std::string, std::string> split_once(const std::string& s, char delim) {
-    size_t pos = s.find(delim);
-    if (pos == std::string::npos)
-        return {s, ""};
-
-    return {
-        s.substr(0, pos),
-        s.substr(pos + 1)
-    };
 }
 
 GMAKEConfig runGMAKEFunction(const std::string& function_name, const std::vector<std::string>& function_args, GMAKEConfig config) {
@@ -363,22 +341,6 @@ std::vector<SSBOBlock> extractSSBOs(const std::string& src) {
     return result;
 }
 
-std::string replace_first(const std::string& input,const std::string& sub,const std::string& repl){
-    std::string s = input;
-    size_t pos = s.find(sub);
-    if (pos != std::string::npos) {
-        s.replace(pos, sub.length(), repl);
-    }
-    return s;
-}
-
-char nextNonSpace(const std::string& s, size_t pos) {
-    size_t i = pos + 1;  // start after current char
-    while (i < s.size() && std::isspace(static_cast<unsigned char>(s[i]))) {
-        ++i;
-    }
-    return (i < s.size()) ? s[i] : '\0'; // '\0' if none found
-}
 void run_layout_bindings(const GMAKEConfig &config){
     for (const std::pair<const std::string, std::vector<fs::path>>& shader : config.ShaderPrograms){
         std::vector<fs::path> shaders = shader.second;

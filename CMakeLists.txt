@@ -11,6 +11,8 @@ message(STATUS "hotfix en is here for the lib libraries")
 
 add_library(common_lib
     lib/cpp/GMAKE_EXCEPTION.cpp
+        lib/cpp/string_utils.h
+        lib/cpp/string_utils.cpp
 )
 
 target_include_directories(common_lib PUBLIC

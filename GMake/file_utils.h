@@ -7,29 +7,9 @@
 #include <filesystem>
 #include <string>
 #include <fstream>
+#include "string_utils.h"
+
 namespace fs = std::filesystem;
-
-inline std::string insertLine(std::string text, int lineIndex, const std::string& newLine){
-    size_t pos = 0;
-    int line = 0;
-
-    while (line < lineIndex && pos != std::string::npos)
-    {
-        pos = text.find('\n', pos);
-
-        if (pos != std::string::npos)
-            pos++; // move past '\n'
-
-        line++;
-    }
-
-    if (pos == std::string::npos)
-        text += newLine + "\n";   // append if too short
-    else
-        text.insert(pos, newLine + "\n");
-
-    return text;
-}
 
 inline std::string readFile(const char* path) {
     std::ifstream file(path, std::ios::binary);
@@ -63,12 +43,6 @@ inline std::string ReadFilePath(const fs::path& path) {
     file.read(data.data(), size);
 
     return data;
-}
-
-inline std::string toLower(std::string s) {
-    for (char& c : s)
-        c = std::tolower((unsigned char)c);
-    return s;
 }
 
 #endif //EVENT_STRUCT_FILE_UTILS_H
