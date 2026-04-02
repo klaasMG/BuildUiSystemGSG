@@ -36,6 +36,7 @@ void GMAKE_EXCEPTION::set_debug(bool debug_input) {
     debug = debug_input;
 }
 
+
 void GMAKE_EXCEPTION::add_to_call_stack(const std::string& text) {
     call_stack.push_back(text);
 }
