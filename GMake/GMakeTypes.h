@@ -1,16 +1,10 @@
-//
-// Created by klaas on 2/11/2026.
-//
-
 #ifndef EVENT_STRUCT_GMAKETYPES_H
 #define EVENT_STRUCT_GMAKETYPES_H
 #include <filesystem>
-
-#include "string"
+#include <string>
 #include <vector>
 #include <unordered_map>
 #include <map>
-
 
 namespace fs = std::filesystem;
 
@@ -30,16 +24,6 @@ struct GMAKEConfig {
     std::map<std::string, std::map<std::string, uint64_t>> SSBO_key_to_value = {};
 };
 
-inline GMakeFunction parseFunction(const std::string& name) {
-    static const std::unordered_map<std::string, GMakeFunction> functionMap = {
-        {"SetProjectDirectory", GMakeFunction::SET_PROJECT_DIRECTORY},
-        {"SetProgram", GMakeFunction::SET_PROGRAM},
-        {"ExtendStandard", GMakeFunction::EXTEND_STANDARD},
-        {"SetLayoutBinding", GMakeFunction::SSBO_LAYOUT_BINDING}
-    };
+GMakeFunction parseFunction(const std::string& name);
 
-    std::unordered_map<std::string, GMakeFunction>::const_iterator it = functionMap.find(name);
-    return (it != functionMap.end()) ? it->second : GMakeFunction::UNKNOWN;
-}
-
-#endif //EVENT_STRUCT_GMAKETYPES_H
+#endif
