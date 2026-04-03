@@ -10,9 +10,14 @@ add_library(utils INTERFACE)
 
 add_executable(GMake build_dependecy_graph.cpp
         SimpleASTGMAKE.h
+        SimpleASTGMAKE.cpp
+        TokeniserGMAKE.h
+        TokeniserGMAKE.cpp
         Tokens.h
         file_utils.h
-        GMakeTypes.h)
+        file_utils.cpp
+        GMakeTypes.h
+        GMakeTypes.cpp)
 
 target_link_libraries(GMake PRIVATE common_lib)
 
