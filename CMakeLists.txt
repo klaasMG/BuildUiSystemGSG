@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.20)
 project(Superbuild LANGUAGES CXX)
 
+function(PybindIntegration)
+
+
+
+endfunction()
+
 option(BUILD_CODE "Build libA" ON)
 option(BUILD_PCL "Build libB" ON)
 option(BUILD_GMAKE "Build libC" ON)
@@ -14,6 +20,8 @@ add_library(common_lib
         lib/cpp_base/GMAKE_EXCEPTION.cpp
         lib/cpp_base/string_utils.h
         lib/cpp_base/string_utils.cpp
+        lib/cpp_base/Error.cpp
+        lib/cpp_base/Error.h
 )
 
 target_include_directories(common_lib PUBLIC

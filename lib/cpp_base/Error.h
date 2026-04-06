@@ -7,6 +7,7 @@ enum class ErrorType {
     NOT_IMPLEMENTED,
     FILE_NOT_FOUND,
     FILE_IN_USE,
+    FILE_DATA_ERROR,
 };
 
 template<typename Data>

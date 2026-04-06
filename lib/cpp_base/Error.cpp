@@ -13,6 +13,12 @@ std::string ErrorType_to_string(ErrorType type) {
         case ErrorType::FILE_NOT_FOUND: {
             return "File not found";
         }
+        case ErrorType::FILE_IN_USE: {
+            return "File in use";
+        }
+        case ErrorType::FILE_DATA_ERROR: {
+            return "File data error";
+        }
     }
     std::cerr << "This can not happen add all other types and this will no longer fail" << std::endl;
     std::terminate();

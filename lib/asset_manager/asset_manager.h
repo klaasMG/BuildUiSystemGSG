@@ -45,7 +45,7 @@ public:
 
     ~TextWriteHandle();
 
-    [[nodiscard]]std::string& get();
+    [[nodiscard]]Result<std::string&> get();
 
 private:
     FileManager* manager = nullptr;
@@ -88,7 +88,7 @@ public:
 
     ~BinaryWriteHandle();
 
-    [[nodiscard]]std::vector<uint8_t>& get();
+    [[nodiscard]]Result<std::vector<uint8_t>&> get();
 
 private:
     FileManager* manager = nullptr;

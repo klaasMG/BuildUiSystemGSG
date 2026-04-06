@@ -78,8 +78,13 @@ TextWriteHandle::~TextWriteHandle() {
     }
 }
 
-std::string& TextWriteHandle::get() {
-    return *data;
+Result<std::string&> TextWriteHandle::get() {
+    if (data) {
+        return *data;
+    }
+    ErrorType error = ErrorType::FILE_DATA_ERROR;
+    Result result = Result<std::string&>(error);
+    return result;
 }
 
 //
@@ -154,8 +159,13 @@ BinaryWriteHandle& BinaryWriteHandle::operator=(BinaryWriteHandle&& other) noexc
     return *this;
 }
 
-std::vector<uint8_t>& BinaryWriteHandle::get() {
-    return *data;
+Result<std::vector<uint8_t>&> BinaryWriteHandle::get() {
+    if (data) {
+        return *data;
+    }
+    ErrorType error = ErrorType::FILE_DATA_ERROR;
+    Result result = Result<std::vector<uint8_t>&>(error);
+    return result;
 }
 
 BinaryWriteHandle::~BinaryWriteHandle() {
