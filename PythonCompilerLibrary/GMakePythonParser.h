@@ -165,6 +165,7 @@ private:
     std::vector<token> Tokens = {};
     uint64_t TokenPos = 0;
     std::vector<Node> parse_code();
+    size_t parse_if_else();
     size_t parse_body();
     size_t parse_statement();
     size_t parse_expression();

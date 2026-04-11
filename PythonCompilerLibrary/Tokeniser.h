@@ -60,7 +60,7 @@ public:
             else if (TokenType literal_token = get_literal_token_type(); literal_token != TokenType::EMPTY){
                 if (literal_token == TokenType::DOT){
                     if (char num_check = peektoken(); std::isdigit(num_check)){
-                        std::string number = parse_number();
+                        std::string number = parse_number(true, false);
                         token tok;
                         tok.type = TokenType::NUMBER;
                         tok.value = number;
@@ -197,49 +197,56 @@ private:
     }
 
     std::string parse_number(bool is_float_in = false, bool is_after_e_in = false){
+        //@TODO: implement the whole function
         bool is_float = is_float_in;
         bool is_after_e = is_after_e_in;
         std::string number = std::string();
-        std::string exponent;
-        while (std::isdigit(peektoken()) || peektoken() == '.' || peektoken() == 'e' || peektoken() == 'E' || peektoken() == '_' || (peektoken() == '-' && is_after_e)){
+        std::string exponent = std::string();
+        bool is_last_char_dot_or_underscore = false;
+        while (isdigit(peektoken()) || (peektoken() == '.' && !is_float) || peektoken() == '_' || peektoken() == 'e' || peektoken() == 'E') {
             char c = nexttoken();
-            if (c == '.'){
-                if (is_float){
-                    throw std::runtime_error("Two dots in a number");
-                }
+            if (c == '.' && is_float) {
+                throw std::runtime_error("Invalid floating point number");
+            } else if (c == '.' && is_last_char_dot_or_underscore) {
+                throw std::runtime_error("_ and . can not be next to each other");
+            } else if (c == '.') {
                 is_float = true;
-                number.push_back(c);
+                is_last_char_dot_or_underscore = true;
+            } else if (c == '_' && is_last_char_dot_or_underscore) {
+                throw std::runtime_error("_ and . can not be next to each other");
+            } else if (c == '_') {
+                is_last_char_dot_or_underscore = true;
             }
-            else if (c == 'e' || c == 'E'){
-                exponent = parse_number(false,true);
-                break;
+            else if ((c == 'e' || c == 'E' ) && is_after_e) {
+                throw std::runtime_error("no twice e in number");
             }
-            else{
-                number.push_back(c);
+            else if (c == 'e' || c == 'E') {
+                exponent = parse_number(false, is_after_e);
+            }
+            else {
+                is_last_char_dot_or_underscore = false;
+            }
+            number.push_back(c);
+        }
+        std::string ret_number = std::string();
+        for (char c : number) {
+            if (c != '_') {
+                ret_number.push_back(c);
             }
         }
-
-        bool is_last_dash = false;
-        for (const char& c : number){
-            if (c == '_'){
-                if (is_last_dash){
-                    throw std::runtime_error("Invalid number");
-                }
-                is_last_dash = true;
+        std::string ret_exponent = std::string();
+        for (char c : exponent) {
+            if (c == '_') {
+                ret_exponent.push_back(c);
             }
         }
-        if (number.ends_with("_") || number.starts_with('_')){
-            throw std::runtime_error("Invalid number");
+        if (!ret_exponent.empty()) {
+            float float_exponent = std::stof(ret_exponent);
+            float float_number = std::stof(ret_number);
+            float float_result = float_number * powf(10.0, float_exponent);
+            ret_number = std::to_string(float_result);
         }
-        if (!exponent.empty()){
-            double exp = atof(exponent.c_str());
-            double num = atof(number.c_str());
-            float result = std::pow(10, exp);
-            result = result * num;
-            number = std::to_string(result);
-        }
-
-        return number;
+        return ret_number;
     }
 
     TokenType get_literal_token_type(){

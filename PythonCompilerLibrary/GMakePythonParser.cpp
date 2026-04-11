@@ -33,9 +33,20 @@ std::vector<Node> Parser::parse_code(){
     return local_ast;
 }
 
+size_t Parser::parse_if_else() {
+    IfNode if_node = {};
+    get_token();
+    size_t expression_node = parse_expression();
+    if_node.condition = expression_node;
+    expect_token(TokenType::COLON);
+    if_node.if_body = parse_body();
+    //@TODO: implement the elif thingy
+    throw std::runtime_error("no elif this is still going");
+}
+
 size_t Parser::parse_body(){
     BodyNode body = {.lines = {}};
-    while (peek_token().type != TokenType::EMPTY){
+    while (peek_token().type != TokenType::EMPTY && peek_token().type != TokenType::DEDENT){
         size_t ast_node = parse_statement();
         if (ast_node == INVALID){}
         body.lines.push_back(ast_node);
@@ -51,13 +62,20 @@ size_t Parser::parse_statement(){
     }
     else if (keyword_check(peek_token(), KeyWord::CLASS)){
         get_token();
-
+        statement_node = parse_class();
     }
     else if (peek_token().type == TokenType::IDENT){
         size_t asignment = parse_assignment();
         if (asignment == INVALID){
             statement_node = parse_expression();
         }
+    }
+    else if (keyword_check(peek_token(), KeyWord::IF)) {
+        size_t if_else_node = parse_if_else();
+        if (if_else_node == INVALID) {
+            throw std::runtime_error("not implemented yet");
+        }
+        statement_node = if_else_node;
     }
     return statement_node;
 }
