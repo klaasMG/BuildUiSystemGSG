@@ -1,7 +1,8 @@
 import queue
-import time
 from pynput import keyboard, mouse
 from enum import Enum
+from typing import Callable
+
 
 class InputEvent(Enum):
     MouseMove = 0
@@ -41,7 +42,6 @@ class InputManager:
     def on_release(self, key):
         self.ui_event_queue.put((InputEvent.KeyRelease, key))
     
-manger = InputManager()
-
-while True:
-    time.sleep(1)
+class InputRegistry:
+    def __init__(self):
+        self.registry: dict[tuple[int, int], Callable] = {}

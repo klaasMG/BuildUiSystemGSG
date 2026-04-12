@@ -220,22 +220,6 @@ class GSGUiManager:
         
     def add_asset(self,path):
         self.asset_path.add(path)
-    
-    def remove_widget_subtree(self , root_widget):
-        stack = [root_widget]
-        while stack:
-            w = stack.pop()
-            stack.extend(w.children.values())
-            
-            # remove from manager
-            self.widgets_by_id.pop(w.id , None)
-            self.free_ids.append(w.id)
-            
-            # 🔥 clear its data
-            self.clear_widget_data(w.id)
-            
-            # clear children
-            w.children.clear()
             
     def pos_update(self):
         acquired = self.hold_lock.lock(time_out=0.01)

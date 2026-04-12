@@ -40,8 +40,24 @@ size_t Parser::parse_if_else() {
     if_node.condition = expression_node;
     expect_token(TokenType::COLON);
     if_node.if_body = parse_body();
-    //@TODO: implement the elif thingy
-    throw std::runtime_error("no elif this is still going");
+    if (keyword_check(peek_token(), KeyWord::ELIF)) {
+        IfNode elif_node = {};
+        while (keyword_check(peek_token(), KeyWord::ELIF)) {
+
+        }
+        //@TODO: implement the elif thingy
+        throw std::runtime_error("no elif this is still going");
+    }
+    else {
+        token tok = get_token();
+        bool is_else = keyword_check(tok, KeyWord::ELSE);
+        if (!is_else) {
+            throw std::runtime_error("fuck off");
+        }
+        expect_token(TokenType::COLON);
+        if_node.else_body = parse_body();
+    }
+
 }
 
 size_t Parser::parse_body(){
