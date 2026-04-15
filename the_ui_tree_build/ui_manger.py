@@ -7,6 +7,7 @@ from PySide6.QtCore import QTimer
 import numpy as np
 from pathlib import Path
 from FontManager import FontManager
+from the_ui_tree_build.focus_manager import FocusManager
 from widget_data import WidgetDataType
 from event_system import event_system, EventQueue, EventTypeEnum
 from threading import Lock, Thread
@@ -32,6 +33,7 @@ class app(QApplication):
 
 class GSGUiManager:
     def __init__(self):
+        self.focus_manager = FocusManager()
         self.buffers_swapped = False
         self.square_exist = False
         self.write_widget_data = Lock()
