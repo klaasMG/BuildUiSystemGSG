@@ -239,19 +239,22 @@ class GSGRenderSystem(QOpenGLWidget):
         
         glDrawArrays(GL_POINTS, 0, self.widget_max)
         glBindVertexArray(0)
-        
+        self.get_height_id_under_mouse(350, 250)
+
+    def get_height_id_under_mouse(self, pixel_x, pixel_y):
         pixel = np.zeros(1, dtype=np.uint32)
-        
-        glReadBuffer(GL_COLOR_ATTACHMENT1)  # info_map
-        glReadPixels(
-            350, 250, 1, 1,
-            GL_RED_INTEGER,
-            GL_UNSIGNED_INT,
-            pixel
-        )
-        
+
+        glReadBuffer(GL_COLOR_ATTACHMENT1)
+        glReadPixels(pixel_x, pixel_y, 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, pixel)
+
         value = int(pixel[0])
         height, widget_id = unpack_u16(value)
+        priority = 1
+        destination = "mouse_pos"
+        event_type = EventTypeEnum.Mouse_Pos
+        event_data = (height, widget_id, pixel_x, pixel_y)
+        event = (priority, destination, event_type, event_data)
+        self.render_queue.send_event(event)
     
     def init_shaders(self, shader_dir: dict):
         for shader_pass in shader_dir.values():

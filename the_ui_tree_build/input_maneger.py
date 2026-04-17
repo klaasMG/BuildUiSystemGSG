@@ -39,6 +39,9 @@ class InputManager:
         self.mouse_listener.start()
         self.keyboard_listener.start()
 
+    def get_event(self):
+        return self.ui_event_queue.get()
+
     def on_move(self, x, y):
         self.ui_event_queue.put(Action(ActionType.MoveMouse, (x, y)))
 

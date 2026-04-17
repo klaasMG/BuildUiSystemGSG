@@ -57,6 +57,7 @@ class GSGUiManager:
         self.window_bottom = None
         self.capture_input = False
         self.ui_manager_queue: EventQueue = event_system.add_queue("ui_manager")
+        self.mouse_pos_queue: EventQueue = event_system.add_queue("mouse_pos")
         self.assets = []
         self.text = []
         self.text_ids: dict[tuple[str, int], int] = {}
