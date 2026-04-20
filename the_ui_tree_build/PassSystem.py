@@ -1,11 +1,86 @@
+import numpy as np
 from OpenGL.GL import *
 from Uniform_Registry import uniform_registry, UniformTypes
-from enum import Enum ,auto
+from enum import Enum
 from PIL import Image
+
+def debug_read_state():
+    # 1. which FBO is bound for reading
+    read_fbo = glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING)
+    print("READ_FBO:", read_fbo)
+
+    # 2. which attachment is selected
+    read_buf = glGetIntegerv(GL_READ_BUFFER)
+    print("READ_BUFFER:", read_buf)
+
+    # 3. what object is attached there
+    obj_type = glGetFramebufferAttachmentParameteriv(
+        GL_FRAMEBUFFER,
+        read_buf,
+        GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE
+    )
+    obj_name = glGetFramebufferAttachmentParameteriv(
+        GL_FRAMEBUFFER,
+        read_buf,
+        GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME
+    )
+
+    print("ATTACHMENT_TYPE:", obj_type)   # GL_TEXTURE / GL_RENDERBUFFER / NONE
+    print("ATTACHMENT_ID:", obj_name)
+
+    # 4. if it's a texture → check format
+    if obj_type == GL_TEXTURE and obj_name != 0:
+        glBindTexture(GL_TEXTURE_2D, obj_name)
+        internal = glGetTexLevelParameteriv(
+            GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT
+        )
+        print("INTERNAL_FORMAT:", internal)
+    else:
+        print("No texture bound to this attachment")
 
 class TextureType(Enum):
     RGBA = "RGBA"
     GREY_SCALE = "L"
+
+class PBODoubleBuffer:
+    """This thing only works on the basic shader pass it rellies on the second image"""
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+
+        self.size = self.width * self.height * 4
+        self.pbos = glGenBuffers(2)
+        self.index = 0
+
+        for pbo in self.pbos:
+            glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo)
+            glBufferData(GL_PIXEL_PACK_BUFFER, self.size, None, GL_STREAM_READ)
+
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0)
+
+    def read_frame(self,x=0, y=0):
+        read_pbo = self.pbos[self.index]
+        map_pbo = self.pbos[1 - self.index]
+
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, read_pbo)
+
+        glReadBuffer(GL_COLOR_ATTACHMENT1)
+        try:
+            #data = np.zeros((self.height, self.width), dtype=np.uint32)
+            glReadPixels(x, y, self.width, self.height,
+                     GL_RED_INTEGER, GL_UNSIGNED_INT, None)
+        except Exception as e:
+            print(self.width, self.height)
+            print(e)
+
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, map_pbo)
+
+        data = glGetBufferSubData(GL_PIXEL_PACK_BUFFER, 0, self.size)
+
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0)
+
+        self.index = 1 - self.index
+        return data
 
 class ShaderPassData:
     def __init__(self,frag_shader, vert_shader):
@@ -17,32 +92,41 @@ class ShaderPassData:
         self.fbo = None
         self.texture = None
         self.info_map = None
-    
+        self.pbo_double_buffer: None | PBODoubleBuffer = None
+        self.size: tuple[int, int] | None = None
+
+    def set_size(self, width, height):
+        self.size = (width, height)
+
+    def set_pbo_double_buffer(self):
+        self.pbo_double_buffer = PBODoubleBuffer(self.size[0], self.size[1])
+
     def load(self, renderer):
         """Use your renderer's loader function to compile and link the shader"""
         self.program = renderer.load_shader_program(self.vert_shader, self.frag_shader)
-    
+
     def assign_vbo(self):
         self.vbo = glGenBuffers(1)
-        
+
     def assign_vao(self):
         self.vao = glGenVertexArrays(1)
-        
+
     def use_vbo(self, vbo):
         self.vbo = vbo
-        
+
     def assign_fbo(self):
         self.fbo = glGenFramebuffers(1)
-        
+
     def assign_text(self):
         self.texture = glGenTextures(1)
-        
+
     def assign_info_map(self):
         self.info_map = glGenTextures(1)
-        
-    def set_uniform(self, name, program):
+
+    @staticmethod
+    def set_uniform(name, program):
         uniform_registry.set_uniform(name, program)
-        
+
     def set_atlas(self, name, program):
         self.set_uniform(name, program)
     
@@ -108,45 +192,3 @@ class Texture:
     def resend(self, image):
         self.bind_texture()
         self.upload(image)
-
-class PBODoubleBuffer:
-    """This thing only works on the basic shader pass it rellies on the second image"""
-    def __init__(self, width, height, data_bytes_num):
-        self.width = width
-        self.height = height
-        self.data_bytes_num = data_bytes_num
-
-        self.size = self.width * self.height * self.data_bytes_num
-        self.pbos = glGenBuffers(2)
-        self.index = 0
-
-        for pbo in self.pbos:
-            glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo)
-            glBufferData(GL_PIXEL_PACK_BUFFER, self.size, None, GL_STREAM_READ)
-
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0)
-
-    def read_frame(self, x=0, y=0):
-        read_pbo = self.pbos[self.index]
-        map_pbo = self.pbos[1 - self.index]
-
-        # 1. start async read into GPU buffer
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, read_pbo)
-        glReadBuffer(GL_COLOR_ATTACHMENT1)
-        glReadPixels(x, y, self.width, self.height, GL_RED_INTEGER, GL_UNSIGNED_INT, None)
-
-        # 2. map previous buffer (CPU read)
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, map_pbo)
-        ptr = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY)
-
-        data = None
-        if ptr:
-            data = glGetBufferSubData(GL_PIXEL_PACK_BUFFER, 0, self.size)
-            glUnmapBuffer(GL_PIXEL_PACK_BUFFER)
-
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0)
-
-        # swap
-        self.index = 1 - self.index
-
-        return data

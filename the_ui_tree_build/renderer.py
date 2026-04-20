@@ -73,6 +73,7 @@ class GSGRenderSystem(QOpenGLWidget):
              1.0, 1.0, 1.0, 1.0, ], dtype=np.float32)
         self.render_queue: EventQueue = event_system.add_queue("renderer")
         self.shader_passes: dict[ShaderPass, ShaderPassData] = {}
+        self.last_frame = []
     
     def resizeGL(self, width, height):
         priority = 0
@@ -90,6 +91,7 @@ class GSGRenderSystem(QOpenGLWidget):
                 pass
             else:
                 self.init_FBOs(width, height, shader_pass)
+                shader_pass.set_pbo_double_buffer()
         self.init_textures(width, height)
     
     def initializeGL(self):
@@ -129,6 +131,7 @@ class GSGRenderSystem(QOpenGLWidget):
                 vertex_data = self.quad
             else:
                 self.init_FBOs(width, height, shader_pass)
+                shader_pass.set_pbo_double_buffer()
                 vertex_data = self.vertices
             
             glBindVertexArray(shader_pass.vao)
@@ -242,10 +245,12 @@ class GSGRenderSystem(QOpenGLWidget):
         self.get_height_id_under_mouse(350, 250)
 
     def get_height_id_under_mouse(self, pixel_x, pixel_y):
-        pixel = np.zeros(1, dtype=np.uint32)
+        pixel = np.zeros(640 * 480, dtype=np.uint32)
 
         glReadBuffer(GL_COLOR_ATTACHMENT1)
-        glReadPixels(pixel_x, pixel_y, 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, pixel)
+        print(self.size())
+
+        glReadPixels(0, 0, 640, 480, GL_RED_INTEGER, GL_UNSIGNED_INT, pixel)
 
         value = int(pixel[0])
         height, widget_id = unpack_u16(value)
@@ -324,6 +329,7 @@ class GSGRenderSystem(QOpenGLWidget):
     def init_FBOs(self, width, height, shader_pass):
         dbg("this is here")
         shader_pass.assign_fbo()
+        shader_pass.set_size(width, height)
         glBindFramebuffer(GL_FRAMEBUFFER, shader_pass.fbo)
         
         shader_pass.assign_text()
@@ -356,7 +362,7 @@ class GSGRenderSystem(QOpenGLWidget):
         if status != GL_FRAMEBUFFER_COMPLETE:
             glBindFramebuffer(GL_FRAMEBUFFER, 0)
             raise RuntimeError(f"FBO incomplete: {hex(status)}")
-        
+
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
     
     def init_SSBOs(self):
