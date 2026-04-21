@@ -9,6 +9,11 @@ try:
 except FileNotFoundError:
     is_debug = False
     
-def debug_func(func,  *args, **kwargs):
+def instant_debug_func(func, *args, **kwargs):
     if is_debug:
         func(*args, **kwargs)
+
+def debug_func(*args, **kwargs):
+    def debug_wrapper(func):
+        instant_debug_func(func, *args, **kwargs)
+    return debug_wrapper

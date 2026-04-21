@@ -8,7 +8,7 @@ from print_wrapper import dbg
 from widget_data import WidgetDataType
 from PIL import Image
 from event_system import event_system, EventQueue, EventTypeEnum
-from PassSystem import ShaderPassData, Texture, set_glActiveTexture, TextureType
+from PassSystem import ShaderPassData, Texture, set_glActiveTexture, TextureType, CpuFrame
 from Uniform_Registry import uniform_registry, UniformTypes
 Image.MAX_IMAGE_PIXELS = None
 
@@ -73,7 +73,8 @@ class GSGRenderSystem(QOpenGLWidget):
              1.0, 1.0, 1.0, 1.0, ], dtype=np.float32)
         self.render_queue: EventQueue = event_system.add_queue("renderer")
         self.shader_passes: dict[ShaderPass, ShaderPassData] = {}
-        self.last_frame = []
+        self.last_frame1 = np.zeros(self.width() * self.height(), dtype=np.uint32)
+        self.last_frame: CpuFrame = CpuFrame(0,0)
     
     def resizeGL(self, width, height):
         priority = 0
@@ -93,6 +94,7 @@ class GSGRenderSystem(QOpenGLWidget):
                 self.init_FBOs(width, height, shader_pass)
                 shader_pass.set_pbo_double_buffer()
         self.init_textures(width, height)
+        self.last_frame.resize(width, height)
     
     def initializeGL(self):
         dbg("initializeGL")
@@ -161,9 +163,9 @@ class GSGRenderSystem(QOpenGLWidget):
             data = self.GSG_gui_system.font_manager.get_render_info()
         self.text_atlas_copy = Texture(self.text_texture_atlas, "uTextAtlas", TextureType.GREY_SCALE)
         self.GSG_gui_system.font_manager.text_lock.release()
-        
+        self.last_frame.resize(width, height)
         self.init_SSBOs()
-        time_finish = time_start - time.time()
+        time_finish = time.time() - time_start
         dbg(time_finish)
     
     def paintGL(self):
@@ -242,24 +244,10 @@ class GSGRenderSystem(QOpenGLWidget):
         
         glDrawArrays(GL_POINTS, 0, self.widget_max)
         glBindVertexArray(0)
-        self.get_height_id_under_mouse(350, 250)
+        self.last_frame.read_in_frame()
 
-    def get_height_id_under_mouse(self, pixel_x, pixel_y):
-        pixel = np.zeros(640 * 480, dtype=np.uint32)
-
-        glReadBuffer(GL_COLOR_ATTACHMENT1)
-        print(self.size())
-
-        glReadPixels(0, 0, 640, 480, GL_RED_INTEGER, GL_UNSIGNED_INT, pixel)
-
-        value = int(pixel[0])
-        height, widget_id = unpack_u16(value)
-        priority = 1
-        destination = "mouse_pos"
-        event_type = EventTypeEnum.Mouse_Pos
-        event_data = (height, widget_id, pixel_x, pixel_y)
-        event = (priority, destination, event_type, event_data)
-        self.render_queue.send_event(event)
+    def get_height_id_last_frame(self, x, y):
+        self.last_frame.get_pixel_data(x, y)
     
     def init_shaders(self, shader_dir: dict):
         for shader_pass in shader_dir.values():

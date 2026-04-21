@@ -3,40 +3,34 @@ from OpenGL.GL import *
 from Uniform_Registry import uniform_registry, UniformTypes
 from enum import Enum
 from PIL import Image
+from ui_debug import debug_func
+from hold_lock import HoldLock
 
-def debug_read_state():
-    # 1. which FBO is bound for reading
-    read_fbo = glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING)
-    print("READ_FBO:", read_fbo)
+def gl_state_print():
+    print("---- GL STATE ----")
 
-    # 2. which attachment is selected
-    read_buf = glGetIntegerv(GL_READ_BUFFER)
-    print("READ_BUFFER:", read_buf)
+    print("Program:", glGetIntegerv(GL_CURRENT_PROGRAM))
+    print("VAO:", glGetIntegerv(GL_VERTEX_ARRAY_BINDING))
 
-    # 3. what object is attached there
-    obj_type = glGetFramebufferAttachmentParameteriv(
-        GL_FRAMEBUFFER,
-        read_buf,
-        GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE
-    )
-    obj_name = glGetFramebufferAttachmentParameteriv(
-        GL_FRAMEBUFFER,
-        read_buf,
-        GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME
-    )
+    print("Array Buffer:", glGetIntegerv(GL_ARRAY_BUFFER_BINDING))
+    print("Element Buffer:", glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING))
 
-    print("ATTACHMENT_TYPE:", obj_type)   # GL_TEXTURE / GL_RENDERBUFFER / NONE
-    print("ATTACHMENT_ID:", obj_name)
+    print("Framebuffer:", glGetIntegerv(GL_FRAMEBUFFER_BINDING))
+    print("Read FBO:", glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING))
+    print("Draw FBO:", glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING))
 
-    # 4. if it's a texture → check format
-    if obj_type == GL_TEXTURE and obj_name != 0:
-        glBindTexture(GL_TEXTURE_2D, obj_name)
-        internal = glGetTexLevelParameteriv(
-            GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT
-        )
-        print("INTERNAL_FORMAT:", internal)
-    else:
-        print("No texture bound to this attachment")
+    print("Texture 2D:", glGetIntegerv(GL_TEXTURE_BINDING_2D))
+    print("Active Texture:", glGetIntegerv(GL_ACTIVE_TEXTURE) - GL_TEXTURE0)
+
+    print("Viewport:", glGetIntegerv(GL_VIEWPORT))
+
+    print("Blend:", glIsEnabled(GL_BLEND))
+    print("Depth Test:", glIsEnabled(GL_DEPTH_TEST))
+    print("Cull Face:", glIsEnabled(GL_CULL_FACE))
+
+    print("---- END ----")
+
+debug_gl_state_print = debug_func(gl_state_print)
 
 class TextureType(Enum):
     RGBA = "RGBA"
@@ -81,6 +75,43 @@ class PBODoubleBuffer:
 
         self.index = 1 - self.index
         return data
+
+def unpack_u16(packed: int) -> tuple[int, int]:
+    a = packed & 0xFFFF
+    b = (packed >> 16) & 0xFFFF
+    return a, b
+
+class CpuFrame:
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+        self.frame_data_height_id = np.zeros((self.width , self.height), dtype=np.uint32)
+        self.frame_lock = HoldLock()
+
+    def resize(self, width, height):
+        self.width = width
+        self.height = height
+        locked = self.frame_lock.lock()
+        if locked:
+            self.frame_data_height_id = np.zeros(self.width * self.height, dtype=np.uint32)
+        self.frame_lock.release()
+
+    def get_pixel_data(self, x: int, y :int):
+        locked = self.frame_lock.lock()
+        height_id = 0
+        if locked:
+            height_id = self.frame_data_height_id[y, x]
+        self.frame_lock.release()
+        height ,widget_id = unpack_u16(height_id)
+        return height, widget_id
+
+    def read_in_frame(self):
+        locked: bool = self.frame_lock.lock()
+        if locked:
+            glPixelStorei(GL_PACK_ALIGNMENT, 1)
+            glReadBuffer(GL_COLOR_ATTACHMENT1)
+            glReadPixels(0, 0, self.width, self.height,GL_RED_INTEGER, GL_UNSIGNED_INT, self.frame_data_height_id)
+        self.frame_lock.release()
 
 class ShaderPassData:
     def __init__(self,frag_shader, vert_shader):
