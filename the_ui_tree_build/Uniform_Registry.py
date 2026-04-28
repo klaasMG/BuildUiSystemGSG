@@ -23,12 +23,15 @@ class UniformRegistry:
     
     def register_uniform(self, name: str, uniform_type: UniformTypes):
         uniform_new = Uniform(uniform_type)
+        print(uniform_new.type, uniform_new.binding, name, uniform_type)
         if uniform_type == UniformTypes.Texture:
             uniform_new.set_binding(self.next_uniform_id)
+            print(uniform_new.type, uniform_new.binding, name, uniform_type)
             self.next_uniform_id += 1
         self.uniforms[name] = uniform_new
         
     def set_uniform(self, name, program):
+        print(name)
         uniform = self.uniforms[name]
         reference = uniform.binding
         if reference is None:

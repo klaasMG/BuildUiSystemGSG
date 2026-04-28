@@ -36,46 +36,6 @@ class TextureType(Enum):
     RGBA = "RGBA"
     GREY_SCALE = "L"
 
-class PBODoubleBuffer:
-    """This thing only works on the basic shader pass it rellies on the second image"""
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
-
-        self.size = self.width * self.height * 4
-        self.pbos = glGenBuffers(2)
-        self.index = 0
-
-        for pbo in self.pbos:
-            glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo)
-            glBufferData(GL_PIXEL_PACK_BUFFER, self.size, None, GL_STREAM_READ)
-
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0)
-
-    def read_frame(self,x=0, y=0):
-        read_pbo = self.pbos[self.index]
-        map_pbo = self.pbos[1 - self.index]
-
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, read_pbo)
-
-        glReadBuffer(GL_COLOR_ATTACHMENT1)
-        try:
-            #data = np.zeros((self.height, self.width), dtype=np.uint32)
-            glReadPixels(x, y, self.width, self.height,
-                     GL_RED_INTEGER, GL_UNSIGNED_INT, None)
-        except Exception as e:
-            print(self.width, self.height)
-            print(e)
-
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, map_pbo)
-
-        data = glGetBufferSubData(GL_PIXEL_PACK_BUFFER, 0, self.size)
-
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0)
-
-        self.index = 1 - self.index
-        return data
-
 def unpack_u16(packed: int) -> tuple[int, int]:
     a = packed & 0xFFFF
     b = (packed >> 16) & 0xFFFF
@@ -123,14 +83,10 @@ class ShaderPassData:
         self.fbo = None
         self.texture = None
         self.info_map = None
-        self.pbo_double_buffer: None | PBODoubleBuffer = None
         self.size: tuple[int, int] | None = None
 
     def set_size(self, width, height):
         self.size = (width, height)
-
-    def set_pbo_double_buffer(self):
-        self.pbo_double_buffer = PBODoubleBuffer(self.size[0], self.size[1])
 
     def load(self, renderer):
         """Use your renderer's loader function to compile and link the shader"""
@@ -156,6 +112,7 @@ class ShaderPassData:
 
     @staticmethod
     def set_uniform(name, program):
+        print("n_:",name)
         uniform_registry.set_uniform(name, program)
 
     def set_atlas(self, name, program):
